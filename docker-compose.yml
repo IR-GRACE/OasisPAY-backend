@@ -1,0 +1,24 @@
+version: "3.9"
+
+services:
+  edupay:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - API_SECRET_KEY=${API_SECRET_KEY}
+      - ADMIN_API_KEY=${ADMIN_API_KEY}
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///./edupay.db}
+      - WEBHOOK_BASE_URL=${WEBHOOK_BASE_URL}
+      - FLUTTERWAVE_SECRET_KEY=${FLUTTERWAVE_SECRET_KEY}
+      - FLUTTERWAVE_BASE_URL=${FLUTTERWAVE_BASE_URL}
+      - FLUTTERWAVE_COUNTRY=${FLUTTERWAVE_COUNTRY}
+      - ADMIN_1_NAME=${ADMIN_1_NAME}
+      - ADMIN_1_PHONE=${ADMIN_1_PHONE}
+      - ADMIN_1_CODE=${ADMIN_1_CODE}
+      - ADMIN_2_NAME=${ADMIN_2_NAME}
+      - ADMIN_2_PHONE=${ADMIN_2_PHONE}
+      - ADMIN_2_CODE=${ADMIN_2_CODE}
+    volumes:
+      - .:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
