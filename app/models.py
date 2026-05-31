@@ -4,6 +4,19 @@ from datetime import datetime
 
 Base = declarative_base()
 
+class Admin(Base):
+    __tablename__ = "admins"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String(255), unique=True, index=True, nullable=False)
+    nom = Column(String(100), nullable=False)
+    prenom = Column(String(100))
+    telephone = Column(String(20), unique=True)
+    hashed_password = Column(String(255), nullable=False)
+    role = Column(String(50), default="admin")
+    actif = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 class Utilisateur(Base):
     __tablename__ = "utilisateurs"
     
