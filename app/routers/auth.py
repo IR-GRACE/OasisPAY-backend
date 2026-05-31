@@ -2,7 +2,7 @@
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from ..database import get_db
-from ..models import Admin, Utilisateur
+from ..models import Utilisateur
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -19,9 +19,6 @@ router = APIRouter(prefix="/auth", tags=["Authentification"])
 
 def verify_password(plain: str, hashed: str) -> bool:
     return pwd_context.verify(plain, hashed)
-
-def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
 
 def create_access_token(data: dict):
     to_encode = data.copy()
@@ -40,31 +37,21 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
     except JWTError:
         raise HTTPException(status_code=401, detail="Token invalide")
     
-    user = db.query(Admin).filter(Admin.email == email).first()
-    if not user:
-        user = db.query(Utilisateur).filter(Utilisateur.email == email).first()
-    
+    user = db.query(Utilisateur).filter(Utilisateur.email == email).first()
     if not user or not user.actif:
         raise HTTPException(status_code=401, detail="Utilisateur non trouvé")
     return user
 
 @router.post("/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = db.query(Admin).filter(Admin.email == form_data.username).first()
-    if not user:
-        user = db.query(Utilisateur).filter(Utilisateur.email == form_data.username).first()
-    
+    user = db.query(Utilisateur).filter(Utilisateur.email == form_data.username).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
     if not user.actif:
         raise HTTPException(status_code=403, detail="Compte désactivé")
     
     access_token = create_access_token(data={"sub": user.email})
-    
-    if hasattr(user.role, 'value'):
-        role_value = user.role.value
-    else:
-        role_value = user.role
+    role_value = user.role.value if hasattr(user.role, 'value') else user.role
     
     return {
         "access_token": access_token,
@@ -81,11 +68,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
 @router.get("/me")
 def get_current_user_info(current_user = Depends(get_current_user)):
-    if hasattr(current_user.role, 'value'):
-        role_value = current_user.role.value
-    else:
-        role_value = current_user.role
-    
+    role_value = current_user.role.value if hasattr(current_user.role, 'value') else current_user.role
     return {
         "id": current_user.id,
         "nom": current_user.nom,
