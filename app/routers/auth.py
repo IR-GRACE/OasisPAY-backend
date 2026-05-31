@@ -37,10 +37,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
     except JWTError:
         raise HTTPException(status_code=401, detail="Token invalide")
     
-    # Chercher d'abord dans admins
     user = db.query(Admin).filter(Admin.email == email).first()
     if not user:
-        # Puis dans utilisateurs
         user = db.query(Utilisateur).filter(Utilisateur.email == email).first()
     
     if not user or not user.actif:
@@ -49,10 +47,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
 
 @router.post("/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    # Chercher d'abord dans admins
     user = db.query(Admin).filter(Admin.email == form_data.username).first()
     if not user:
-        # Puis dans utilisateurs
         user = db.query(Utilisateur).filter(Utilisateur.email == form_data.username).first()
     
     if not user or not verify_password(form_data.password, user.hashed_password):
@@ -62,8 +58,11 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     
     access_token = create_access_token(data={"sub": user.email})
     
-    # Obtenir le rôle correctement
-    role_value = user.role.value if hasattr(user.role, 'value') else user.role
+    # Gérer le rôle (string ou enum)
+    if hasattr(user.role, 'value'):
+        role_value = user.role.value
+    else:
+        role_value = user.role
     
     return {
         "access_token": access_token,
@@ -80,7 +79,11 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
 @router.get("/me")
 def get_current_user_info(current_user = Depends(get_current_user)):
-    role_value = current_user.role.value if hasattr(current_user.role, 'value') else current_user.role
+    if hasattr(current_user.role, 'value'):
+        role_value = current_user.role.value
+    else:
+        role_value = current_user.role
+    
     return {
         "id": current_user.id,
         "nom": current_user.nom,
