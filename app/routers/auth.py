@@ -20,6 +20,9 @@ router = APIRouter(prefix="/auth", tags=["Authentification"])
 def verify_password(plain: str, hashed: str) -> bool:
     return pwd_context.verify(plain, hashed)
 
+def get_password_hash(password: str) -> str:
+    return pwd_context.hash(password)
+
 def create_access_token(data: dict):
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -58,7 +61,6 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     
     access_token = create_access_token(data={"sub": user.email})
     
-    # Gérer le rôle (string ou enum)
     if hasattr(user.role, 'value'):
         role_value = user.role.value
     else:
