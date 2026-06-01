@@ -103,8 +103,7 @@ def register(user_data: RegisterRequest, db: Session = Depends(get_db)):
         prenom=user_data.prenom,
         telephone=user_data.telephone,
         role=user_data.role,
-        actif=True,
-        is_verified=True
+        actif=True
     )
     db.add(new_user)
     db.commit()
@@ -120,24 +119,5 @@ class RegisterRequest(BaseModel):
     telephone: str
     role: str = "parent"
 
-@router.post("/register")
-def register(user_data: RegisterRequest, db: Session = Depends(get_db)):
-    existing = db.query(Utilisateur).filter(Utilisateur.email == user_data.email).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Cet email est déjà utilisé")
-    hashed = get_password_hash(user_data.password)
-    new_user = Utilisateur(
-        email=user_data.email,
-        hashed_password=hashed,
-        nom=user_data.nom,
-        prenom=user_data.prenom,
-        telephone=user_data.telephone,
-        role=user_data.role,
-        actif=True,
-        is_verified=True
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return {"message": "Compte créé avec succès", "user_id": new_user.id}
+
 
