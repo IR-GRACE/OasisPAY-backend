@@ -12,7 +12,7 @@ router = APIRouter(prefix="/paiements", tags=["Paiements"])
 
 @router.post("/", response_model=PaiementResponse)
 async def initier_paiement(
-    paiement: PaiementCreate,
+        print("DEBUG: paiement fields:", paiement.dict().keys())\n    paiement: PaiementCreate,
     db: Session = Depends(get_db),
     current_user: Utilisateur = Depends(get_current_user)
 ):
@@ -95,3 +95,4 @@ def get_paiement(reference: str, db: Session = Depends(get_db), current_user: Ut
     if not paiement:
         raise HTTPException(status_code=404, detail="Paiement non trouvé")
     return paiement
+

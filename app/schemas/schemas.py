@@ -14,12 +14,12 @@ class TokenResponse(BaseModel):
 
 # ==================== PAIEMENTS ====================
 class PaiementCreate(BaseModel):
-    devise: str = 'CDF'  # 'CDF' ou 'USD'\n    etudiant_id: int
+    etudiant_id: int
     montant: float
     type_frais: str
     methode_paiement: str
     numero_telephone: str
-
+    devise: str = 'CDF'
 class PaiementResponse(BaseModel):
     id: int
     reference: str
@@ -85,4 +85,5 @@ class DashboardStats(BaseModel):
     total_enseignants: int
     total_paiements: float
     paiements_ce_mois: float
+
 
