@@ -87,3 +87,4 @@ class DashboardStats(BaseModel):
     paiements_ce_mois: float
 
 
+

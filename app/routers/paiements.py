@@ -16,17 +16,13 @@ async def initier_paiement(
     db: Session = Depends(get_db),
     current_user: Utilisateur = Depends(get_current_user)
 ):
-    # Vérifier l'étudiant
     etudiant = db.query(Etudiant).filter(Etudiant.id == paiement.etudiant_id).first()
     if not etudiant:
         raise HTTPException(status_code=404, detail="Étudiant non trouvé")
     if etudiant.parent_id != current_user.id:
         raise HTTPException(status_code=403, detail="Non autorisé")
     
-    # Référence unique
     reference = f"OASIS-{uuid.uuid4().hex[:8].upper()}"
-    
-    # Créer l'enregistrement
     nouveau_paiement = Paiement(
         reference=reference,
         etudiant_id=paiement.etudiant_id,
@@ -41,7 +37,6 @@ async def initier_paiement(
     db.commit()
     db.refresh(nouveau_paiement)
     
-    # Appel à WonyaPay
     try:
         wonya = WonyaPayService()
         operateur = paiement.methode_paiement.upper()
@@ -59,7 +54,7 @@ async def initier_paiement(
     except Exception as e:
         nouveau_paiement.statut = "echoue"
         db.commit()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/webhook/wonya")
 async def wonya_webhook(request: Request, db: Session = Depends(get_db)):
