@@ -22,11 +22,11 @@ async def initier_paiement(
         raise HTTPException(status_code=404, detail="Étudiant non trouvé")
     if etudiant.parent_id != current_user.id:
         raise HTTPException(status_code=403, detail="Non autorisé")
-
-    # Générer une référence unique
+    
+    # Référence unique
     reference = f"OASIS-{uuid.uuid4().hex[:8].upper()}"
-
-    # Créer l'enregistrement en base
+    
+    # Créer l'enregistrement
     nouveau_paiement = Paiement(
         reference=reference,
         etudiant_id=paiement.etudiant_id,
@@ -40,7 +40,7 @@ async def initier_paiement(
     db.add(nouveau_paiement)
     db.commit()
     db.refresh(nouveau_paiement)
-
+    
     # Appel à WonyaPay
     try:
         wonya = WonyaPayService()
