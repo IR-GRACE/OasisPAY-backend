@@ -17,16 +17,17 @@ class WonyaPayService:
         chars = string.ascii_letters + string.digits
         return ''.join(random.choice(chars) for _ in range(20))
 
-    async def initier_paiement(self, montant: float, telephone: str, operateur: str, reference: str, description: str) -> Dict[str, Any]:
+    async def initier_paiement(self, montant: float, telephone: str, operateur: str, reference: str, description: str, devise: str = "CDF") -> Dict[str, Any]:
         endpoint = f"{self.base_url}/payment"
 
         ref_transa = self._generate_ref_transa(reference)
 
         payload = {
-            "token": self.api_key,
             "RefPartenaire": self.project_ref,
             "RefTransa": ref_transa,
-            "amount": int(montant),
+            "Action": "C2B",
+            "Montant": int(montant),
+            "Devise": devise,
             "phone": telephone,
             "mobilemoney": operateur.upper(),
             "reference": ref_transa,
