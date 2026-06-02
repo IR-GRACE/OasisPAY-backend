@@ -1,71 +1,90 @@
-﻿from fastapi import APIRouter, Depends
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Header, Request
+﻿from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from ..database import get_db
-from .. import models, auth
-import logging
-from app.database import get_db
-from app import models, auth
-from app.services.payment_service import MobileMoneyService
-from app.services.notification_service import NotificationService
-from app.core.config import settings
+from ..models import Paiement, Utilisateur, Etudiant
+from ..schemas import PaiementCreate, PaiementResponse
+from ..services.wonya_pay import WonyaPayService
+from .auth import get_current_user
 import uuid
+from datetime import datetime
 
-router = APIRouter(tags=["Paiements"])
-logger = logging.getLogger("edupay.payments")
+router = APIRouter(prefix="/payments", tags=["Paiements"])
 
-@router.get("/")
-def get_payments(
-@router.post("/initiate")
-async def initiate_payment(
-    amount: float,
-    phone: str,
-    provider: str,
-    currency: str = "CDF",
+@router.post("/", response_model=PaiementResponse)
+async def initier_paiement(
+    paiement: PaiementCreate,
     db: Session = Depends(get_db),
-    current_user: models.Utilisateur = Depends(auth.get_current_user)
+    current_user: Utilisateur = Depends(get_current_user)
 ):
-    return []
-    """Route appelée par le frontend pour lancer un paiement"""
-    reference = f"PAY-{uuid.uuid4().hex[:8].upper()}"
+    etudiant = db.query(Etudiant).filter(Etudiant.id == paiement.etudiant_id).first()
+    if not etudiant:
+        raise HTTPException(status_code=404, detail="Étudiant non trouvé")
+    if etudiant.parent_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Non autorisé")
     
-    # 1. Enregistrer la transaction en attente en BDD
-    new_tx = models.Transaction(
+    reference = f"OASIS-{uuid.uuid4().hex[:8].upper()}"
+    nouveau_paiement = Paiement(
         reference=reference,
-        expediteur_id=current_user.id,
-        montant=amount,
-        total=amount, # Calculer les frais si nécessaire
-        type="paiement",
-        methode=provider,
-        telephone=phone,
-        statut=models.StatutPaiementEnum.EN_ATTENTE
+        etudiant_id=paiement.etudiant_id,
+        montant=paiement.montant,
+        devise=paiement.devise,
+        type_frais=paiement.type_frais,
+        methode_paiement=paiement.methode_paiement,
+        numero_telephone=paiement.numero_telephone,
+        statut="en_attente"
     )
-    db.add(new_tx)
+    db.add(nouveau_paiement)
     db.commit()
+    db.refresh(nouveau_paiement)
+    
+    try:
+        wonya = WonyaPayService()
+        operateur = paiement.methode_paiement.upper()
+        result = await wonya.initier_paiement(
+            montant=paiement.montant,
+            telephone=paiement.numero_telephone,
+            operateur=operateur,
+            reference=reference,
+            description=f"Frais {paiement.type_frais} - {etudiant.nom} {etudiant.prenom}"
+        )
+        nouveau_paiement.transaction_id = result.get("transaction_id")
+        nouveau_paiement.statut = "initie"
+        db.commit()
+        return nouveau_paiement
+    except Exception as e:
+        nouveau_paiement.statut = "echoue"
+        db.commit()
+        raise HTTPException(status_code=500, detail=str(e))
 
-    # 2. Appeler le service de paiement réel
-    result = await MobileMoneyService.process_payment(
-        provider=provider,
-        phone=phone,
-        amount=amount,
-        reference=reference,
-        currency=currency
-    )
+@router.post("/webhook/wonya")
+async def wonya_webhook(request: Request, db: Session = Depends(get_db)):
+    try:
+        data = await request.json()
+    except:
+        return {"status": "error", "message": "Invalid JSON"}
+    
+    reference = data.get("reference")
+    statut = data.get("status")
+    transaction_id = data.get("transaction_id")
+    
+    if reference:
+        paiement = db.query(Paiement).filter(Paiement.reference == reference).first()
+        if paiement:
+            if statut == "SUCCESS":
+                paiement.statut = "paye"
+                paiement.date_paiement = datetime.utcnow()
+            else:
+                paiement.statut = "echoue"
+            if transaction_id:
+                paiement.transaction_id = transaction_id
+            db.commit()
+            return {"status": "ok", "message": "Paiement mis à jour"}
+    return {"status": "ignored", "message": "Référence non trouvée"}
 
-    if not result.get("success"):
-        raise HTTPException(status_code=400, detail=result.get("error"))
+@router.get("/{reference}", response_model=PaiementResponse)
+def get_paiement(reference: str, db: Session = Depends(get_db), current_user: Utilisateur = Depends(get_current_user)):
+    paiement = db.query(Paiement).filter(Paiement.reference == reference).first()
+    if not paiement:
+        raise HTTPException(status_code=404, detail="Paiement non trouvé")
+    return paiement
 
-    return result
-
-@router.post("/webhook/flutterwave")
-async def flutterwave_webhook(
-    request: Request,
-    background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db),
-    verif_hash: str = Header(None, alias="verif-hash")
-):
-    """Réception de la confirmation réelle de Flutterwave"""
-    # Logique de vérification du hash et mise à jour BDD ici...
-    # Une fois le paiement validé :
-    # background_tasks.add_task(NotificationService.notify_payment, user_id, amount, ref)
-    return {"status": "ok"}

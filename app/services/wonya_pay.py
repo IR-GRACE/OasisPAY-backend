@@ -42,3 +42,4 @@ class WonyaPayService:
                 return response.json()
             else:
                 raise Exception(f"Erreur WonyaPay: {response.text}")
+
