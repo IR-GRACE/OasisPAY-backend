@@ -31,10 +31,10 @@ async def initier_paiement(
         reference=reference,
         etudiant_id=paiement.etudiant_id,
         montant=paiement.montant,
+        devise=paiement.devise if hasattr(paiement, 'devise') else 'CDF',
         type_frais=paiement.type_frais,
         methode_paiement=paiement.methode_paiement,
         numero_telephone=paiement.numero_telephone,
-        devise=paiement.devise if hasattr(paiement, 'devise') else 'CDF',
         statut="en_attente"
     )
     db.add(nouveau_paiement)
@@ -67,11 +67,11 @@ async def wonya_webhook(request: Request, db: Session = Depends(get_db)):
         data = await request.json()
     except:
         return {"status": "error", "message": "Invalid JSON"}
-    
+
     reference = data.get("reference")
     statut = data.get("status")
     transaction_id = data.get("transaction_id")
-    
+
     if reference:
         paiement = db.query(Paiement).filter(Paiement.reference == reference).first()
         if paiement:
