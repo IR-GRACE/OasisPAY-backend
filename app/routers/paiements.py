@@ -1,34 +1,87 @@
-﻿from fastapi import APIRouter, Depends, HTTPException
+﻿from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from datetime import datetime
 from ..database import get_db
-from ..models import Paiement
+from ..models import Paiement, Utilisateur, Etudiant
+from ..schemas import PaiementCreate, PaiementResponse
+from ..services.wonya_pay import WonyaPayService
 from .auth import get_current_user
 import uuid
-from datetime import datetime
 
 router = APIRouter(prefix="/paiements", tags=["Paiements"])
 
-@router.get("/")
-def get_paiements(db: Session = Depends(get_db), current_user = Depends(get_current_user)):
-    return db.query(Paiement).order_by(Paiement.date.desc()).all()
+@router.post("/", response_model=PaiementResponse)
+async def initier_paiement(
+    paiement: PaiementCreate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: Utilisateur = Depends(get_current_user)
+):
+    # Récupérer l'étudiant
+    etudiant = db.query(Etudiant).filter(Etudiant.id == paiement.etudiant_id).first()
+    if not etudiant:
+        raise HTTPException(status_code=404, detail="Étudiant non trouvé")
+    if etudiant.parent_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Non autorisé")
 
-@router.post("/")
-def create_paiement(paiement_data: dict, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
-    reference = f"PAY-{datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6].upper()}"
-    new_paiement = Paiement(**paiement_data, reference=reference, caissier_id=current_user.id)
-    db.add(new_paiement)
+    # Générer une référence unique
+    reference = f"OASIS-{uuid.uuid4().hex[:8].upper()}"
+
+    # Créer le paiement en base
+    nouveau_paiement = Paiement(
+        reference=reference,
+        etudiant_id=paiement.etudiant_id,
+        montant=paiement.montant,
+        type_frais=paiement.type_frais,
+        methode_paiement=paiement.methode_paiement,
+        numero_telephone=paiement.numero_telephone,
+        statut="en_attente"
+    )
+    db.add(nouveau_paiement)
     db.commit()
-    db.refresh(new_paiement)
-    return new_paiement
+    db.refresh(nouveau_paiement)
 
-@router.get("/stats/dashboard")
-def get_dashboard_stats(db: Session = Depends(get_db), current_user = Depends(get_current_user)):
-    total_etudiants = db.query(Paiement).count()
-    total_encaisse = db.query(func.sum(Paiement.montant)).filter(Paiement.statut == "paye").scalar() or 0
-    return {
-        "total_etudiants": total_etudiants,
-        "total_encaisse": float(total_encaisse),
-        "taux_paiement": 0,
-        "paiements_en_attente": 0
-    }
+    # Appel à WonyaPay
+    try:
+        wonya = WonyaPayService()
+        operateur = paiement.methode_paiement.upper()
+        result = await wonya.initier_paiement(
+            montant=paiement.montant,
+            telephone=paiement.numero_telephone,
+            operateur=operateur,
+            reference=reference,
+            description=f"Frais {paiement.type_frais} - {etudiant.nom} {etudiant.prenom}"
+        )
+        nouveau_paiement.transaction_id = result.get("transaction_id")
+        nouveau_paiement.statut = "initie"
+        db.commit()
+        return nouveau_paiement
+    except Exception as e:
+        nouveau_paiement.statut = "echoue"
+        db.commit()
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.post("/webhook/wonya")
+async def wonya_webhook(request: Request, db: Session = Depends(get_db)):
+    """Webhook WonyaPay"""
+    data = await request.json()
+    reference = data.get("reference")
+    statut = data.get("status")
+    transaction_id = data.get("transaction_id")
+    paiement = db.query(Paiement).filter(Paiement.reference == reference).first()
+    if paiement:
+        if statut == "SUCCESS":
+            paiement.statut = "paye"
+            paiement.date_paiement = datetime.utcnow()
+        else:
+            paiement.statut = "echoue"
+        paiement.transaction_id = transaction_id
+        db.commit()
+    return {"status": "ok"}
+
+@router.get("/{reference}", response_model=PaiementResponse)
+def get_paiement(reference: str, db: Session = Depends(get_db), current_user: Utilisateur = Depends(get_current_user)):
+    paiement = db.query(Paiement).filter(Paiement.reference == reference).first()
+    if not paiement:
+        raise HTTPException(status_code=404, detail="Paiement non trouvé")
+    return paiement
