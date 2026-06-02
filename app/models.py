@@ -52,3 +52,4 @@ class Paiement(Base):
     reference = Column(String(100), unique=True, index=True)
     date_paiement = Column(DateTime, default=datetime.utcnow)
     created_at = Column(DateTime, default=datetime.utcnow)
+
