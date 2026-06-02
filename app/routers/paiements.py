@@ -1,14 +1,12 @@
 ﻿from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
-from typing import List
-from datetime import datetime
-import uuid
-
 from ..database import get_db
 from ..models import Paiement, Utilisateur, Etudiant
 from ..schemas import PaiementCreate, PaiementResponse
 from ..services.wonya_pay import WonyaPayService
 from .auth import get_current_user
+import uuid
+from datetime import datetime
 
 router = APIRouter(prefix="/paiements", tags=["Paiements"])
 
@@ -24,10 +22,11 @@ async def initier_paiement(
         raise HTTPException(status_code=404, detail="Étudiant non trouvé")
     if etudiant.parent_id != current_user.id:
         raise HTTPException(status_code=403, detail="Non autorisé")
-    
+
+    # Générer une référence unique
     reference = f"OASIS-{uuid.uuid4().hex[:8].upper()}"
-    
-    # Création du paiement en base
+
+    # Créer l'enregistrement en base
     nouveau_paiement = Paiement(
         reference=reference,
         etudiant_id=paiement.etudiant_id,
@@ -41,7 +40,7 @@ async def initier_paiement(
     db.add(nouveau_paiement)
     db.commit()
     db.refresh(nouveau_paiement)
-    
+
     # Appel à WonyaPay
     try:
         wonya = WonyaPayService()
@@ -60,7 +59,7 @@ async def initier_paiement(
     except Exception as e:
         nouveau_paiement.statut = "echoue"
         db.commit()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/webhook/wonya")
 async def wonya_webhook(request: Request, db: Session = Depends(get_db)):
