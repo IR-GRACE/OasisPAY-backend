@@ -27,7 +27,7 @@ async def initier_paiement(
         reference=reference,
         etudiant_id=paiement.etudiant_id,
         montant=paiement.montant,
-        devise=paiement.devise if hasattr(paiement, 'devise')            nouveau_paiement = Paiement(
+        devise = paiement.devise if hasattr(paiement, "devise") else "CDF"`n            nouveau_paiement = Paiement(
                 reference=reference,
                 etudiant_id=paiement.etudiant_id,
                 montant=paiement.montant,
@@ -384,4 +384,5 @@ def get_paiement(reference: str, db: Session = Depends(get_db)            nouvea
                 statut="en_attente"
             )
     return paiement
+
 
