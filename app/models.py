@@ -44,18 +44,17 @@ class Etudiant(Base):
 
 class Paiement(Base):
     __tablename__ = "paiements"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     etudiant_id = Column(Integer, nullable=False)
     montant = Column(Float, nullable=False)
+    devise = Column(String(3), default='CDF')
+    type_frais = Column(String(100))
+    methode_paiement = Column(String(50))
+    numero_telephone = Column(String(32))
     statut = Column(String(50), default="en_attente")
     reference = Column(String(100), unique=True, index=True)
+    transaction_id = Column(String(255))
     date_paiement = Column(DateTime, default=datetime.utcnow)
     created_at = Column(DateTime, default=datetime.utcnow)
-
-
-
-
-
-
 
