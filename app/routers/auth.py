@@ -1,4 +1,4 @@
-Ôªøfrom fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from ..database import get_db
@@ -32,7 +32,7 @@ def create_access_token(data: dict):
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     if not token:
-        raise HTTPException(status_code=401, detail="Non authentifi√©")
+        raise HTTPException(status_code=401, detail="Non authentifiÈ")
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email = payload.get("sub")
@@ -43,16 +43,16 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
     
     user = db.query(Utilisateur).filter(Utilisateur.email == email).first()
     if not user or not user.actif:
-        raise HTTPException(status_code=401, detail="Utilisateur non trouv√©")
+        raise HTTPException(status_code=401, detail="Utilisateur non trouvÈ")
     return user
 
 @router.post("/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = db.query(Utilisateur).filter(Utilisateur.email == form_data.username).first()
+    user = db.query(Utilisateur).filter(Utilisateur.email == form_data.email).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
     if not user.actif:
-        raise HTTPException(status_code=403, detail="Compte d√©sactiv√©")
+        raise HTTPException(status_code=403, detail="Compte dÈsactivÈ")
     
     access_token = create_access_token(data={"sub": user.email})
     role_value = user.role.value if hasattr(user.role, 'value') else user.role
@@ -94,7 +94,7 @@ class RegisterRequest(BaseModel):
 def register(user_data: RegisterRequest, db: Session = Depends(get_db)):
     existing = db.query(Utilisateur).filter(Utilisateur.email == user_data.email).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Cet email est d√©j√† utilis√©")
+        raise HTTPException(status_code=400, detail="Cet email est dÈj‡ utilisÈ")
     hashed = get_password_hash(user_data.password)
     new_user = Utilisateur(
         email=user_data.email,
@@ -108,7 +108,7 @@ def register(user_data: RegisterRequest, db: Session = Depends(get_db)):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return {"message": "Compte cr√©√© avec succ√®s", "user_id": new_user.id}
+    return {"message": "Compte crÈÈ avec succËs", "user_id": new_user.id}
 
 
 class RegisterRequest(BaseModel):

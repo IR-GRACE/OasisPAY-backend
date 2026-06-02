@@ -241,7 +241,7 @@ def show_demo_commands():
     print("   curl http://localhost:8000/api/etudiants/verifier/ETU001")
     
     print("\n3. 💰 Créer un paiement WonyaPay (Orange Money) :")
-    print("   curl -X POST http://localhost:8000/api/paiements/ \\")
+    print("   curl -X POST http://localhost:8000/api/payments/initiate \\")
     print("     -H \"Content-Type: application/json\" \\")
     print("     -d '{")
     print("       \"etudiant_id\": 1,")
@@ -253,12 +253,12 @@ def show_demo_commands():
     print("     }'")
     
     print("\n4. 🧪 Tester WonyaPay directement :")
-    print("   curl -X POST http://localhost:8000/api/paiements/wonya/test \\")
+    print("   curl -X POST http://localhost:8000/api/payments/wonya/test \\")
     print("     -H \"Content-Type: application/json\" \\")
     print("     -d '{\"montant\": 500, \"devise\": \"CDF\", \"execute\": true}'")
     
     print("\n5. 🔍 Vérifier une transaction :")
-    print("   curl http://localhost:8000/api/paiements/ref/TRX_DEMO_001")
+    print("   curl http://localhost:8000/api/payments/status/TRX_DEMO_001")
     
     print("\n6. 👨‍💼 Dashboard admin :")
     print("   curl -H \"X-API-KEY: supersecretadminkey\" \\")
@@ -273,7 +273,7 @@ def show_demo_commands():
     print("   curl http://localhost:8000/api/admin/stats")
     
     print("\n9. 📝 Toutes les transactions :")
-    print("   curl http://localhost:8000/api/paiements/")
+    print("   curl http://localhost:8000/api/payments/history")
 
 def generate_demo_script():
     """Génère un script de démo automatisé"""

@@ -7,6 +7,18 @@ Exécute ce script après avoir obtenu tes clés API
 import os
 import sys
 from pathlib import Path
+import re
+
+def validate_url(url):
+    """Valide sommairement le format d'une URL"""
+    regex = re.compile(
+        r'^(?:http|ftp)s?://' # http:// ou https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' # domain...
+        r'localhost|' # localhost...
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
+        r'(?::\d+)?' # optional port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+    return re.match(regex, url) is not None
 
 def setup_flutterwave():
     """Configuration Flutterwave"""
@@ -55,7 +67,7 @@ def setup_wonya():
     if api_key and project_ref:
         update_env("WONYA_API_KEY", api_key)
         update_env("WONYA_PROJECT_REF", project_ref)
-        update_env("WONYA_BASE_URL", f"https://app.wonyasoft.com/projet-details/{project_ref}")
+        update_env("WONYA_BASE_URL", "https://app-api.wonyasoft.com")
         print("✅ WonyaPay configuré !")
         return True
     else:
@@ -76,39 +88,42 @@ def setup_webhook():
     print("\nPour la PRODUCTION :")
     print("   • Utilise ton domaine (ex: https://edupay.cd)")
     
-    webhook_url = input("\n🎯 Entre ton URL de webhook : ").strip()
-    
-    if webhook_url:
-        update_env("WEBHOOK_BASE_URL", f"{webhook_url}/api/payments/webhook")
-        print("✅ Webhook configuré !")
-        return True
-    else:
-        print("⚠️  Webhook non configuré")
-        return False
+    while True:
+        webhook_url = input("\n🎯 Entre ton URL de base (ex: https://abc.ngrok.io) : ").strip()
+        if not webhook_url:
+            print("⚠️  Webhook non configuré")
+            return False
+        
+        if validate_url(webhook_url):
+            full_url = f"{webhook_url.rstrip('/')}/api/payments/webhook"
+            update_env("WEBHOOK_BASE_URL", full_url)
+            print(f"✅ Webhook configuré : {full_url}")
+            return True
+        else:
+            print("❌ URL invalide. Veuillez réessayer.")
 
 def update_env(key, value):
     """Mettre à jour le fichier .env"""
     env_path = Path(".env")
     
     if not env_path.exists():
-        print(f"❌ Fichier .env introuvable")
-        return
+        env_path.touch()
     
-    with open(env_path, 'r', encoding='utf-8') as f:
-        lines = f.readlines()
+    lines = env_path.read_text(encoding='utf-8').splitlines()
+    new_lines = []
+    key_found = False
     
-    updated = False
-    for i, line in enumerate(lines):
+    for line in lines:
         if line.startswith(f"{key}="):
-            lines[i] = f"{key}={value}\n"
-            updated = True
-            break
-    
-    if not updated:
-        lines.append(f"\n{key}={value}\n")
-    
-    with open(env_path, 'w', encoding='utf-8') as f:
-        f.writelines(lines)
+            new_lines.append(f"{key}={value}")
+            key_found = True
+        else:
+            new_lines.append(line)
+            
+    if not key_found:
+        new_lines.append(f"{key}={value}")
+        
+    env_path.write_text("\n".join(new_lines) + "\n", encoding='utf-8')
 
 def test_paiement():
     """Tester un paiement"""
@@ -118,12 +133,12 @@ def test_paiement():
     
     print("\nPour tester IMMÉDIATEMENT :")
     print("\n1. Avec WonyaPay (déjà partiellement configuré) :")
-    print("   curl -X POST http://localhost:8000/api/paiements/wonya/test \\")
+    print("   curl -X POST http://localhost:8000/api/payments/wonya/test \\")
     print("     -H \"Content-Type: application/json\" \\")
     print("     -d '{\"montant\": 100, \"devise\": \"CDF\", \"execute\": true}'")
     
     print("\n2. Avec Flutterwave (après configuration) :")
-    print("   curl -X POST http://localhost:8000/api/paiements/ \\")
+    print("   curl -X POST http://localhost:8000/api/payments/initiate \\")
     print("     -H \"Content-Type: application/json\" \\")
     print("     -H \"Authorization: Bearer ton_token\" \\")
     print("     -d '{")

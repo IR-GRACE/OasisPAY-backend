@@ -53,7 +53,7 @@ async def test_wonya_payment():
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
-                "http://localhost:8000/api/paiements/wonya/test",
+                "http://localhost:8000/api/payments/wonya/test",
                 json=test_data,
                 headers={"Content-Type": "application/json"}
             )
@@ -132,7 +132,7 @@ async def create_real_payment():
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
-                "http://localhost:8000/api/paiements/",
+                "http://localhost:8000/api/payments/initiate",
                 json=payment_data,
                 headers={"Content-Type": "application/json"}
             )
@@ -169,7 +169,7 @@ async def check_payment_status(transaction_ref):
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.get(
-                f"http://localhost:8000/api/paiements/ref/{transaction_ref}",
+                f"http://localhost:8000/api/payments/status/{transaction_ref}",
                 headers={"Content-Type": "application/json"}
             )
             
