@@ -85,3 +85,4 @@ def get_paiement(reference: str, db: Session = Depends(get_db), current_user: Ut
     if not paiement:
         raise HTTPException(status_code=404, detail="Paiement non trouvé")
     return paiement
+
