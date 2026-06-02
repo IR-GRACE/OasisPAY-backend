@@ -26,15 +26,16 @@ async def initier_paiement(
             raise HTTPException(status_code=403, detail="Non autorisé")
 
         reference = f"OASIS-{uuid.uuid4().hex[:8].upper()}"
-        nouveau_paiement = Paiement(
-            reference=reference,
-            etudiant_id=paiement.etudiant_id,
-            montant=paiement.montant,
-            type_frais=paiement.type_frais,
-            methode_paiement=paiement.methode_paiement,
-            numero_telephone=paiement.numero_telephone,
-            statut="en_attente"
-        )
+                    nouveau_paiement = Paiement(
+                reference=reference,
+                etudiant_id=paiement.etudiant_id,
+                montant=paiement.montant,
+                devise=paiement.devise,
+                type_frais=paiement.type_frais,
+                methode_paiement=paiement.methode_paiement,
+                numero_telephone=paiement.numero_telephone,
+                statut="en_attente"
+            )
         db.add(nouveau_paiement)
         db.commit()
         db.refresh(nouveau_paiement)
@@ -89,3 +90,4 @@ def get_paiement(reference: str, db: Session = Depends(get_db), current_user: Ut
     if not paiement:
         raise HTTPException(status_code=404, detail="Paiement non trouvé")
     return paiement
+

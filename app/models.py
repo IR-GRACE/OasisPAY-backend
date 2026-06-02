@@ -53,3 +53,4 @@ class Paiement(Base):
     date_paiement = Column(DateTime, default=datetime.utcnow)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+
