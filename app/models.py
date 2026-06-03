@@ -58,3 +58,8 @@ class Paiement(Base):
     date_paiement = Column(DateTime, default=datetime.utcnow)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+class Classe(Base):
+    __tablename__ = "classes"
+    id = Column(Integer, primary_key=True, index=True)
+    nom = Column(String, nullable=False)
+    frais_scolarite = Column(Float, default=0)
