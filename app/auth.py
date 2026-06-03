@@ -43,25 +43,22 @@ def decode_token(token: str) -> dict:
     except JWTError:
         raise HTTPException(status_code=401, detail="Token invalide ou expiré")
 
-async def get_current_user(
-    token: str = Depends(oauth2_scheme),
+async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):\n    print("=== get_current_user called ===")\n    print(f"Token reçu: {token[:50]}...") str = Depends(oauth2_scheme),
     db: Session = Depends(get_db)
 ) -> models.Utilisateur:
-    if not token:
+        if not token:\n        print("Token manquant")
         raise HTTPException(status_code=401, detail="Non authentifié")
     
-    payload = decode_token(token)
-    email: str = payload.get("sub")
-    if not email:
+        print("Avant decode_token")\n    payload = decode_token(token)\n    print("Après decode_token")
+        email: str = payload.get("sub")\n    print(f"Email extrait: {email}")\n    if not email:
         raise HTTPException(status_code=401, detail="Token invalide")
     
-    user = db.query(models.Utilisateur).filter(models.Utilisateur.email == email).first()
-    if not user:
+        user = db.query(models.Utilisateur).filter(models.Utilisateur.email == email).first()\n    print(f"User trouvé: {user}")\n    if not user:
         raise HTTPException(status_code=401, detail="Utilisateur non trouvé")
-    if not user.actif:
+        if not user.actif:\n        print("User inactif")
         raise HTTPException(status_code=403, detail="Compte désactivé")
     
-    return user
+        print("Return user")\n    return user
 
 async def get_current_active_user(
     current_user: models.Utilisateur = Depends(get_current_user)
