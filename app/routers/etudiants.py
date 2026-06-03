@@ -18,3 +18,13 @@ def create_etudiant(etudiant_data: dict, db: Session = Depends(get_db), current_
     db.commit()
     db.refresh(new_etudiant)
     return new_etudiant
+
+
+@router.get("/mes-etudiants")
+async def get_mes_etudiants(
+    db: Session = Depends(get_db),
+    current_user: Utilisateur = Depends(get_current_user)
+):
+    # Pour un parent, retourner ses étudiants
+    etudiants = db.query(Etudiant).filter(Etudiant.parent_id == current_user.id).all()
+    return etudiants

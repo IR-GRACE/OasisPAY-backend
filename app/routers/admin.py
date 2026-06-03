@@ -50,3 +50,21 @@ def toggle_user_status(user_id: int, db: Session = Depends(get_db), current_user
     user.actif = not user.actif
     db.commit()
     return {"message": f"Compte {'activé' if user.actif else 'désactivé'}"}
+
+
+@router.post("/assign-parent/{etudiant_id}/{parent_id}")
+async def assign_parent(
+    etudiant_id: int,
+    parent_id: int,
+    db: Session = Depends(get_db),
+    current_user: Utilisateur = Depends(require_admin)
+):
+    etudiant = db.query(Etudiant).filter(Etudiant.id == etudiant_id).first()
+    if not etudiant:
+        raise HTTPException(status_code=404, detail="Étudiant non trouvé")
+    parent = db.query(Utilisateur).filter(Utilisateur.id == parent_id).first()
+    if not parent:
+        raise HTTPException(status_code=404, detail="Parent non trouvé")
+    etudiant.parent_id = parent_id
+    db.commit()
+    return {"message": "Parent associé avec succès"}
