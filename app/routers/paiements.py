@@ -1,12 +1,15 @@
 ﻿from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from ..database import get_db\nfrom reportlab.pdfgen import canvas\nfrom io import BytesIO\nfrom fastapi.responses import StreamingResponse
-from ..models import Utilisateur, Etudiant, Paiement, Etudiant
+from ..database import get_db
+from ..models import Utilisateur, Etudiant, Paiement
 from ..services.wonya_pay import WonyaPayService
 from ..auth import get_current_user
 from typing import Optional
 from datetime import datetime
+from reportlab.pdfgen import canvas
+from io import BytesIO
+from fastapi.responses import StreamingResponse
 
 router = APIRouter(prefix="/paiements", tags=["paiements"])
 
@@ -57,11 +60,9 @@ def generate_recu(
     db: Session = Depends(get_db),
     current_user: Utilisateur = Depends(get_current_user)
 ):
-    from reportlab.pdfgen import canvas
-    from io import BytesIO
     paiement = db.query(Paiement).filter(Paiement.id == paiement_id).first()
     if not paiement:
-        raise HTTPException(404, "Paiement non trouvé")
+        raise HTTPException(status_code=404, detail="Paiement non trouvé")
     etudiant = db.query(Etudiant).filter(Etudiant.id == paiement.etudiant_id).first()
     buffer = BytesIO()
     c = canvas.Canvas(buffer)
@@ -72,5 +73,4 @@ def generate_recu(
     c.drawString(100, 720, f"Référence: {paiement.reference}")
     c.save()
     buffer.seek(0)
-    from fastapi.responses import StreamingResponse
     return StreamingResponse(buffer, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename=recu_{paiement_id}.pdf"})
