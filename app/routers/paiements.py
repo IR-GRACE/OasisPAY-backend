@@ -1,8 +1,8 @@
 ﻿from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from ..database import get_db
-from ..models import Utilisateur, Etudiant, Paiement
+from ..database import get_db\nfrom reportlab.pdfgen import canvas\nfrom io import BytesIO\nfrom fastapi.responses import StreamingResponse
+from ..models import Utilisateur, Etudiant, Paiement, Etudiant
 from ..services.wonya_pay import WonyaPayService
 from ..auth import get_current_user
 from typing import Optional
@@ -50,3 +50,27 @@ async def initier_paiement(
         return {"status": "processing", "reference": result.get("RefTransa"), "message": "Paiement initié"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/recu/{paiement_id}")
+def generate_recu(
+    paiement_id: int,
+    db: Session = Depends(get_db),
+    current_user: Utilisateur = Depends(get_current_user)
+):
+    from reportlab.pdfgen import canvas
+    from io import BytesIO
+    paiement = db.query(Paiement).filter(Paiement.id == paiement_id).first()
+    if not paiement:
+        raise HTTPException(404, "Paiement non trouvé")
+    etudiant = db.query(Etudiant).filter(Etudiant.id == paiement.etudiant_id).first()
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer)
+    c.drawString(100, 800, f"Reçu de paiement OasisPAY")
+    c.drawString(100, 780, f"Étudiant: {etudiant.nom} {etudiant.prenom}")
+    c.drawString(100, 760, f"Montant: {paiement.montant} FC")
+    c.drawString(100, 740, f"Date: {paiement.created_at}")
+    c.drawString(100, 720, f"Référence: {paiement.reference}")
+    c.save()
+    buffer.seek(0)
+    from fastapi.responses import StreamingResponse
+    return StreamingResponse(buffer, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename=recu_{paiement_id}.pdf"})

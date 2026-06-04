@@ -1,30 +1,40 @@
-﻿from fastapi import APIRouter, Depends, HTTPException
+﻿from ..models import Utilisateur
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import List
+from sqlalchemy import or_
 from ..database import get_db
-from ..models import Etudiant
-from .auth import get_current_user
+from ..models import Etudiant, Classe
+from ..auth import get_current_user, require_admin
+from typing import Optional
 
-router = APIRouter(prefix="/etudiants", tags=["Étudiants"])
+router = APIRouter(prefix="/etudiants", tags=["etudiants"])
 
 @router.get("/")
-def get_etudiants(db: Session = Depends(get_db), current_user = Depends(get_current_user)):
-    return db.query(Etudiant).all()
-
-@router.post("/")
-def create_etudiant(etudiant_data: dict, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
-    new_etudiant = Etudiant(**etudiant_data)
-    db.add(new_etudiant)
-    db.commit()
-    db.refresh(new_etudiant)
-    return new_etudiant
-
-
-@router.get("/mes-etudiants")
-async def get_mes_etudiants(
+def get_etudiants(
     db: Session = Depends(get_db),
-    current_user: Utilisateur = Depends(get_current_user)
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    search: Optional[str] = Query(None),
+    classe_id: Optional[int] = Query(None),
+    parent_id: Optional[int] = Query(None),
+    current_user = Depends(get_current_user)
 ):
-    # Pour un parent, retourner ses étudiants
-    etudiants = db.query(Etudiant).filter(Etudiant.parent_id == current_user.id).all()
-    return etudiants
+    query = db.query(Etudiant)
+    if parent_id:
+        query = query.filter(Etudiant.parent_id == parent_id)
+    if classe_id:
+        query = query.filter(Etudiant.classe_id == classe_id)
+    if search:
+        query = query.filter(
+            or_(
+                Etudiant.nom.ilike(f"%{search}%"),
+                Etudiant.prenom.ilike(f"%{search}%"),
+                Etudiant.matricule.ilike(f"%{search}%")
+            )
+        )
+    total = query.count()
+    etudiants = query.offset(skip).limit(limit).all()
+    return {
+        "total": total,
+        "items": [{"id": e.id, "nom": e.nom, "prenom": e.prenom, "matricule": e.matricule, "classe_id": e.classe_id} for e in etudiants]
+    }
