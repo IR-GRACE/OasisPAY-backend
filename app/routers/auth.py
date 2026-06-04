@@ -49,7 +49,9 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
 @router.post("/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(Utilisateur).filter(Utilisateur.email == form_data.username).first()
-    if not user or not verify_password(form_data.password, user.hashed_password):
+    if not user or not verify_password(form_data.password, user.hashed_password)
+    if not user.is_verified:
+        raise HTTPException(status_code=403, detail='Veuillez vérifier votre email')
         raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
     if not user.actif:
         raise HTTPException(status_code=403, detail="Compte désactivé")
@@ -108,6 +110,9 @@ def register(user_data: RegisterRequest, db: Session = Depends(get_db)):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+    # Envoi email de vérification
+    verification_token = str(uuid.uuid4())
+    send_verification_email(user_data.email, verification_token)
     return {"message": "Compte créé avec succès", "user_id": new_user.id}
 
 

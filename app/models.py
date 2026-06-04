@@ -14,7 +14,7 @@ class Admin(Base):
     telephone = Column(String(20), unique=True)
     hashed_password = Column(String(255), nullable=False)
     role = Column(String(50), default="admin")
-    actif = Column(Boolean, default=True)
+    actif = Column(Boolean, default=True)\n    is_verified = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class Utilisateur(Base):
@@ -27,7 +27,7 @@ class Utilisateur(Base):
     telephone = Column(String(20))
     hashed_password = Column(String(255), nullable=False)
     role = Column(String(50), default="parent")
-    actif = Column(Boolean, default=True)
+    actif = Column(Boolean, default=True)\n    is_verified = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class Etudiant(Base):
@@ -39,7 +39,7 @@ class Etudiant(Base):
     matricule = Column(String(50), unique=True, index=True)
     parent_id = Column(Integer, ForeignKey("utilisateurs.id"))
     classe_id = Column(Integer)
-    actif = Column(Boolean, default=True)
+    actif = Column(Boolean, default=True)\n    is_verified = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class Paiement(Base):
