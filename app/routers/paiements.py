@@ -7,9 +7,9 @@ from ..services.wonya_pay import WonyaPayService
 from ..auth import get_current_user
 from typing import Optional
 from datetime import datetime
-from reportlab.pdfgen import canvas
-from io import BytesIO
-from fastapi.responses import StreamingResponse
+# from reportlab.pdfgen import canvas
+# from io import BytesIO
+# from fastapi.responses import StreamingResponse
 
 router = APIRouter(prefix="/paiements", tags=["paiements"])
 
@@ -54,7 +54,7 @@ async def initier_paiement(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@router.get("/recu/{paiement_id}")
+# Endpoint PDF temporairement désactivé\n# @router.get("/recu/{paiement_id}")
 def generate_recu(
     paiement_id: int,
     db: Session = Depends(get_db),
