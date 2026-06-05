@@ -49,7 +49,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
 @router.post("/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(Utilisateur).filter(Utilisateur.email == form_data.username).first()
-    if not user or not verify_password(form_data.password, user.hashed_password)
+    if not user or not verify_password(form_data.password, user.hashed_password):
     if not user.is_verified:
         raise HTTPException(status_code=403, detail='Veuillez vérifier votre email')
         raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
