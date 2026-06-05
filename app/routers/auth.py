@@ -46,6 +46,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
 
 @router.post("/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+        print(f"[AUTH] Tentative de connexion avec username: {form_data.username!r}")
     user = db.query(Utilisateur).filter(Utilisateur.email == form_data.username).first()
     if not user:
         raise HTTPException(status_code=401, detail="Email incorrect")
