@@ -1,49 +1,48 @@
 ﻿from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from ..database import get_db
-from ..models import Utilisateur
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from pydantic import BaseModel
+from ..database import get_db
+from ..models import Utilisateur
+from ..schemas import TokenData
 import os
 
-SECRET_KEY = os.getenv("SECRET_KEY", "secret_key_change_me")
+router = APIRouter(prefix="/auth", tags=["auth"])
+
+SECRET_KEY = os.getenv("SECRET_KEY", "votre_cle_tres_secrete")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 
-router = APIRouter(prefix="/auth", tags=["Authentification"])
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
 
-def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
-
-def get_password_hash(password: str) -> str:
+def get_password_hash(password):
     return pwd_context.hash(password)
 
-def create_access_token(data: dict):
+def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    if not token:
-        raise HTTPException(status_code=401, detail="Non authentifié")
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email = payload.get("sub")
-        if not email:
+        email: str = payload.get("sub")
+        if email is None:
             raise HTTPException(status_code=401, detail="Token invalide")
     except JWTError:
         raise HTTPException(status_code=401, detail="Token invalide")
-    
     user = db.query(Utilisateur).filter(Utilisateur.email == email).first()
-    if not user or not user.actif:
+    if user is None:
         raise HTTPException(status_code=401, detail="Utilisateur non trouvé")
+    if not user.actif:
+        raise HTTPException(status_code=403, detail="Compte désactivé")
     return user
 
 @router.post("/login")
@@ -53,62 +52,27 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         raise HTTPException(status_code=401, detail="Email ou mot de passe incorrect")
     if not user.is_verified:
         raise HTTPException(status_code=403, detail="Veuillez vérifier votre email")
-    if not user.actif:
-        raise HTTPException(status_code=403, detail="Compte désactivé")
     access_token = create_access_token(data={"sub": user.email})
-    role_value = user.role.value if hasattr(user.role, 'value') else user.role
-    return {"access_token": access_token, "token_type": "bearer", "user": {"id": user.id, "email": user.email, "role": role_value, "nom": user.nom, "prenom": user.prenom, "actif": user.actif}}
-@router.get("/me")
-def get_current_user_info(current_user = Depends(get_current_user)):
-    role_value = current_user.role.value if hasattr(current_user.role, 'value') else current_user.role
-    return {
-        "id": current_user.id,
-        "nom": current_user.nom,
-        "prenom": getattr(current_user, 'prenom', ''),
-        "email": current_user.email,
-        "role": role_value,
-        "actif": current_user.actif
-    }
-
-class RegisterRequest(BaseModel):
-    email: str
-    password: str
-    nom: str
-    prenom: str
-    telephone: str
-    role: str = "parent"
+    return {"access_token": access_token, "token_type": "bearer", "user": {"id": user.id, "email": user.email, "nom": user.nom, "prenom": user.prenom, "role": user.role, "actif": user.actif, "is_verified": user.is_verified}}
 
 @router.post("/register")
-def register(user_data: RegisterRequest, db: Session = Depends(get_db)):
-    existing = db.query(Utilisateur).filter(Utilisateur.email == user_data.email).first()
+def register(user_data: dict, db: Session = Depends(get_db)):
+    existing = db.query(Utilisateur).filter(Utilisateur.email == user_data["email"]).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Cet email est déjà utilisé")
-    hashed = get_password_hash(user_data.password)
+        raise HTTPException(status_code=400, detail="Email déjà utilisé")
+    hashed = get_password_hash(user_data["password"])
     new_user = Utilisateur(
-        email=user_data.email,
+        email=user_data["email"],
+        nom=user_data["nom"],
+        prenom=user_data["prenom"],
+        telephone=user_data.get("telephone"),
         hashed_password=hashed,
-        nom=user_data.nom,
-        prenom=user_data.prenom,
-        telephone=user_data.telephone,
-        role=user_data.role,
-        actif=True
+        role=user_data.get("role", "user"),
+        actif=True,
+        is_verified=False
     )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    # Envoi email de vérification
-    verification_token = str(uuid.uuid4())
-    send_verification_email(user_data.email, verification_token)
-    return {"message": "Compte créé avec succès", "user_id": new_user.id}
-
-
-class RegisterRequest(BaseModel):
-    email: str
-    password: str
-    nom: str
-    prenom: str
-    telephone: str
-    role: str = "parent"
-
-
-
+    # Ici vous pouvez envoyer un email de vérification
+    return {"message": "Utilisateur créé. Vérifiez votre email."}

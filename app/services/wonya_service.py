@@ -1,4 +1,4 @@
-﻿import httpx
+import httpx
 import random
 import string
 from typing import Optional

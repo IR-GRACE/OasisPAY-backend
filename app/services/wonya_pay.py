@@ -1,4 +1,4 @@
-﻿import os
+import os
 import httpx
 import uuid
 import re

@@ -1,4 +1,4 @@
-﻿from ..models import Utilisateur
+from ..models import Utilisateur
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from ..database import get_db
