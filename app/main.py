@@ -2,7 +2,7 @@
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine
 from .models import Base
-from .routers import auth, etudiants, paiements, admin, classes
+from .routers import auth, etudiants, paiements, admin, classes, notifications
 
 # Créer les tables
 Base.metadata.create_all(bind=engine)
@@ -22,6 +22,7 @@ app.include_router(etudiants.router, prefix="/api/v1")
 app.include_router(paiements.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
 app.include_router(classes.router, prefix="/api/v1")
+app.include_router(notifications.router, prefix="/api/v1")
 
 @app.get("/")
 def root():
