@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+﻿from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from ..database import get_db
@@ -29,7 +29,7 @@ async def initier_paiement(
 ):
     etudiant = db.query(Etudiant).filter(Etudiant.id == request.etudiant_id).first()
     if not etudiant:
-        raise HTTPException(status_code=404, detail="Étudiant non trouvé")
+        raise HTTPException(status_code=404, detail="Ã‰tudiant non trouvÃ©")
 
     service = WonyaPayService()
     try:
@@ -50,11 +50,11 @@ async def initier_paiement(
         )
         db.add(paiement)
         db.commit()
-        return {"status": "processing", "reference": result.get("RefTransa"), "message": "Paiement initié"}
+        return {"status": "processing", "reference": result.get("RefTransa"), "message": "Paiement initiÃ©"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-# Endpoint PDF temporairement désactivé\n# @router.get("/recu/{paiement_id}")
+# Endpoint PDF temporairement dÃ©sactivÃ©\n# @router.get("/recu/{paiement_id}")
 def generate_recu(
     paiement_id: int,
     db: Session = Depends(get_db),
@@ -62,15 +62,32 @@ def generate_recu(
 ):
     paiement = db.query(Paiement).filter(Paiement.id == paiement_id).first()
     if not paiement:
-        raise HTTPException(status_code=404, detail="Paiement non trouvé")
+        raise HTTPException(status_code=404, detail="Paiement non trouvÃ©")
     etudiant = db.query(Etudiant).filter(Etudiant.id == paiement.etudiant_id).first()
     buffer = BytesIO()
     c = canvas.Canvas(buffer)
-    c.drawString(100, 800, f"Reçu de paiement OasisPAY")
-    c.drawString(100, 780, f"Étudiant: {etudiant.nom} {etudiant.prenom}")
+    c.drawString(100, 800, f"ReÃ§u de paiement OasisPAY")
+    c.drawString(100, 780, f"Ã‰tudiant: {etudiant.nom} {etudiant.prenom}")
     c.drawString(100, 760, f"Montant: {paiement.montant} FC")
     c.drawString(100, 740, f"Date: {paiement.created_at}")
-    c.drawString(100, 720, f"Référence: {paiement.reference}")
+    c.drawString(100, 720, f"RÃ©fÃ©rence: {paiement.reference}")
     c.save()
     buffer.seek(0)
     return StreamingResponse(buffer, media_type="application/pdf", headers={"Content-Disposition": f"attachment; filename=recu_{paiement_id}.pdf"})
+@router.post("/webhook/shwary")
+async def shwary_webhook(request: Request, db: Session = Depends(get_db)):
+    payload = await request.json()
+    print(f"Webhook Shwary: {payload}")
+    reference = payload.get("reference")
+    status = payload.get("status")  # "success", "failed", "pending"
+    if reference:
+        paiement = db.query(Paiement).filter(Paiement.reference == reference).first()
+        if paiement:
+            if status == "success":
+                paiement.statut = "SUCCESS"
+            elif status == "failed":
+                paiement.statut = "FAILED"
+            else:
+                paiement.statut = "PROCESSING"
+            db.commit()
+    return {"status": "ok"}
