@@ -6,7 +6,6 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from ..database import get_db
 from ..models import Utilisateur
-from ..schemas import TokenData
 import os
 
 router = APIRouter(prefix="/auth", tags=["auth"])
