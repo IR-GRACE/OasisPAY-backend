@@ -21,7 +21,7 @@ class PaymentRequest(BaseModel):
     telephone: str
     email_utilisateur: Optional[str] = None
 
-@router.post("/initier")
+@router.post("/initier", response_model=None)
 async def initier_paiement(
     request: PaymentRequest,
     db: Session = Depends(get_db),
