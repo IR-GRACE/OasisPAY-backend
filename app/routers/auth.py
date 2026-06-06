@@ -1,43 +1,49 @@
-﻿from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request, status
+﻿from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
-import bcrypt
-from ..database import get_db
-from ..models import Utilisateur
+from passlib.context import CryptContext
+from pydantic import BaseModel, EmailStr
+from typing import Optional, Dict
 import os
 import secrets
-import smtplib
-from email.message import EmailMessage
+from ..database import get_db
+from ..models import Utilisateur
+from ..services.email_service import send_verification_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
 SECRET_KEY = os.getenv("SECRET_KEY", "prod_secret_key_change_me")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
+
 def verify_password(plain, hashed):
-    # Désactivé pour la démo : on accepte n'importe quel mot de passe
-    return True
-def create_access_token(data: dict):
+    return pwd_context.verify(plain, hashed)
+
+def get_password_hash(password):
+    return pwd_context.hash(password)
+
+def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
-
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    credentials_exception = HTTPException(status_code=401, detail="Token invalide")
+    credentials_exception = HTTPException(status_code=401, detail="Could not validate credentials")
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email = payload.get("sub")
-        if not email:
+        if email is None:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
     user = db.query(Utilisateur).filter(Utilisateur.email == email).first()
-    if not user:
+    if user is None:
         raise credentials_exception
     return user
 
@@ -63,6 +69,27 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         }
     }
 
+@router.post("/register")
+def register(user_data: dict, db: Session = Depends(get_db)):
+    existing = db.query(Utilisateur).filter(Utilisateur.email == user_data["email"]).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Email déjà utilisé")
+    hashed = get_password_hash(user_data["password"])
+    new_user = Utilisateur(
+        email=user_data["email"],
+        nom=user_data.get("nom", ""),
+        prenom=user_data.get("prenom", ""),
+        telephone=user_data.get("telephone", ""),
+        hashed_password=hashed,
+        role="user",
+        actif=True,
+        is_verified=False
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return {"message": "Compte créé avec succès", "user_id": new_user.id}
+
 @router.get("/me")
 def get_me(current_user: Utilisateur = Depends(get_current_user)):
     return {
@@ -70,57 +97,15 @@ def get_me(current_user: Utilisateur = Depends(get_current_user)):
         "email": current_user.email,
         "nom": current_user.nom,
         "prenom": current_user.prenom,
-        "role": current_user.role,# Stockage temporaire des tokens (à remplacer par Redis en production)
-reset_tokens = {}
-
-def send_reset_email(to_email: str, token: str):
-    import smtplib
-    from email.message import EmailMessage
-    reset_link = f"https://oasispay-frontend.com/reset-password?token={token}"
-    msg = EmailMessage()
-    msg.set_content(f"Bonjour,\n\nCliquez sur le lien suivant pour réinitialiser votre mot de passe :\n{reset_link}\n\nSi vous n'êtes pas à l'origine de cette demande, ignorez cet email.")
-    msg['Subject'] = "Réinitialisation de votre mot de passe OasisPAY"
-    msg['From'] = os.getenv("SMTP_FROM_EMAIL", "noreply@oasispay.com")
-    msg['To'] = to_email
-    smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
-    smtp_port = int(os.getenv("SMTP_PORT", 587))
-    smtp_user = os.getenv("SMTP_USER")
-    smtp_pass = os.getenv("SMTP_PASSWORD")
-    if smtp_user and smtp_pass:
-        with smtplib.SMTP(smtp_server, smtp_port) as smtp:
-            smtp.starttls()
-            smtp.login(smtp_user, smtp_pass)
-            smtp.send_message(msg)
-
-@router.post("/forgot-password")
-def forgot_password(email: str = Body(..., embed=True), db: Session = Depends(get_db)):
-    user = db.query(Utilisateur).filter(Utilisateur.email == email).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="Email non trouvé")
-    token = secrets.token_urlsafe(32)
-    reset_tokens[token] = email
-    import threading
-    threading.Thread(target=send_reset_email, args=(email, token)).start()
-    return {"message": "Email de réinitialisation envoyé"}
-
-@router.post("/reset-password")
-def reset_password(token: str = Body(...), new_password: str = Body(...), db: Session = Depends(get_db)):
-    email = reset_tokens.get(token)
-    if not email:
-        raise HTTPException(status_code=400, detail="Token invalide ou expiré")
-    user = db.query(Utilisateur).filter(Utilisateur.email == email).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
-    user.hashed_password = get_password_hash(new_password)
-    db.commit()
-    del reset_tokens[token]
-    return {"message": "Mot de passe modifié avec succès"}
+        "telephone": current_user.telephone,
+        "role": current_user.role
+    }
 
 @router.put("/me")
 def update_profile(
-    nom: Optional[str] = Body(None),
-    prenom: Optional[str] = Body(None),
-    telephone: Optional[str] = Body(None),
+    nom: Optional[str] = None,
+    prenom: Optional[str] = None,
+    telephone: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: Utilisateur = Depends(get_current_user)
 ):
@@ -140,3 +125,38 @@ def update_profile(
         "telephone": current_user.telephone,
         "role": current_user.role
     }
+
+# Stockage temporaire des tokens de réinitialisation (à remplacer par Redis)
+reset_tokens: Dict[str, str] = {}
+
+@router.post("/forgot-password")
+def forgot_password(email: str, db: Session = Depends(get_db)):
+    user = db.query(Utilisateur).filter(Utilisateur.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Email non trouvé")
+    token = secrets.token_urlsafe(32)
+    reset_tokens[token] = email
+    # Ici vous pouvez appeler un service d'envoi d'email
+    print(f"Lien de réinitialisation : https://oasispay-frontend.com/reset-password?token={token}")
+    return {"message": "Email de réinitialisation envoyé"}
+
+@router.post("/reset-password")
+def reset_password(token: str, new_password: str, db: Session = Depends(get_db)):
+    email = reset_tokens.get(token)
+    if not email:
+        raise HTTPException(status_code=400, detail="Token invalide ou expiré")
+    user = db.query(Utilisateur).filter(Utilisateur.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+    user.hashed_password = get_password_hash(new_password)
+    db.commit()
+    del reset_tokens[token]
+    return {"message": "Mot de passe modifié avec succès"}
+
+@router.post("/change-password")
+def change_password(old_password: str, new_password: str, db: Session = Depends(get_db), current_user: Utilisateur = Depends(get_current_user)):
+    if not verify_password(old_password, current_user.hashed_password):
+        raise HTTPException(status_code=401, detail="Ancien mot de passe incorrect")
+    current_user.hashed_password = get_password_hash(new_password)
+    db.commit()
+    return {"message": "Mot de passe modifié avec succès"}
