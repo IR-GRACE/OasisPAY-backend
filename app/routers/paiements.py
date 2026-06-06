@@ -17,7 +17,6 @@ class PaymentRequest(BaseModel):
     telephone: str
     email_utilisateur: Optional[str] = None
 
-# Simplification : pas de dépendance à get_current_user pour le test (sinon token requis)
 @router.post("/initier")
 async def initier_paiement(
     request: PaymentRequest,
@@ -36,6 +35,7 @@ async def initier_paiement(
             reference=f"OASIS_{int(datetime.now().timestamp())}",
             description=f"Paiement pour {etudiant.nom} {etudiant.prenom}"
         )
+        # Enregistrer le paiement avec le statut PENDING
         paiement = Paiement(
             etudiant_id=request.etudiant_id,
             montant=request.montant,
@@ -47,6 +47,6 @@ async def initier_paiement(
         )
         db.add(paiement)
         db.commit()
-        return {"status": "processing", "reference": result.get("reference"), "message": "Paiement initié"}
+        return {"status": "processing", "reference": result.get("reference"), "message": "Paiement initié, veuillez confirmer sur votre téléphone"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

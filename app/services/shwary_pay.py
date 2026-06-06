@@ -3,17 +3,23 @@ import httpx
 import uuid
 import re
 from typing import Dict, Any
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ShwaryService:
     def __init__(self):
         self.merchant_id = os.getenv("SHWARY_MERCHANT_ID")
         self.merchant_key = os.getenv("SHWARY_MERCHANT_KEY")
         self.sandbox = os.getenv("SHWARY_SANDBOX", "true") == "true"
+        # URL de base de l'API Shwary (sandbox ou production)
         self.base_url = "https://api.shwary.com/v1" if not self.sandbox else "https://sandbox.api.shwary.com/v1"
         if not self.merchant_id or not self.merchant_key:
             raise ValueError("Shwary credentials manquantes")
+        logger.info(f"ShwaryService initialisé en mode {'sandbox' if self.sandbox else 'production'}")
 
     def _normaliser_telephone(self, telephone: str) -> str:
+        # Nettoie le numéro et le met au format international (243XXXXXXXXX)
         chiffres = re.sub(r'\D', '', telephone)
         if len(chiffres) == 9:
             return '243' + chiffres
@@ -28,7 +34,8 @@ class ShwaryService:
         mapping = {
             "AIRTEL": "airtel",
             "ORANGE": "orange",
-            "VODACOM": "vodacom"
+            "VODACOM": "vodacom",
+            "MPESA": "vodacom"
         }
         return mapping.get(operateur.upper(), operateur.lower())
 
@@ -47,7 +54,7 @@ class ShwaryService:
             "operator": operateur_api,
             "reference": reference,
             "description": description,
-            "callback_url": os.getenv("SHWARY_CALLBACK_URL")
+            "callback_url": os.getenv("SHWARY_CALLBACK_URL", "https://oasispay-backend-production.up.railway.app/api/v1/paiements/webhook/shwary")
         }
 
         headers = {
@@ -55,14 +62,15 @@ class ShwaryService:
             "Content-Type": "application/json"
         }
 
-        print(f"=== SHWARY PAYMENT ===")
-        print(f"Payload: {payload}")
+        # Log détaillé
+        print(f"[Shwary] Envoi paiement à {self.base_url}/payments")
+        print(f"[Shwary] Payload: {payload}")
 
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(f"{self.base_url}/payments", json=payload, headers=headers)
-            print(f"Status: {response.status_code}")
-            print(f"Response: {response.text}")
-            if response.status_code == 200 or response.status_code == 201:
+            print(f"[Shwary] Status: {response.status_code}")
+            print(f"[Shwary] Response: {response.text}")
+            if response.status_code in [200, 201]:
                 return response.json()
             else:
-                raise Exception(f"Shwary error: {response.text}")
+                raise Exception(f"Erreur Shwary: {response.text}")
