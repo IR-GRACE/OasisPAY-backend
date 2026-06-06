@@ -38,12 +38,13 @@ class ShwaryService:
         if not reference:
             reference = f"OASIS_{uuid.uuid4().hex[:12].upper()}"
 
-        # Liste des endpoints à essayer (ordre probable)
+        # Liste des endpoints probables (ordre à essayer)
         endpoints = [
             "/v1/payment/initiate",
             "/payment/initiate",
             "/payment",
-            "/api/payment"
+            "/api/payment",
+            "/v1/payment"
         ]
 
         headers = {
@@ -65,7 +66,7 @@ class ShwaryService:
         last_error = None
         for endpoint in endpoints:
             url = f"{self.base_url}{endpoint}"
-            print(f"Trying endpoint: {url}")
+            print(f"Tentative endpoint: {url}")
             async with httpx.AsyncClient(timeout=30.0) as client:
                 try:
                     response = await client.post(url, json=payload, headers=headers)
@@ -73,7 +74,7 @@ class ShwaryService:
                     if response.status_code in (200, 201):
                         return response.json()
                     else:
-                        last_error = f"Endpoint {endpoint} returned {response.status_code}: {response.text}"
+                        last_error = f"{url} -> {response.status_code}: {response.text}"
                 except Exception as e:
-                    last_error = f"Endpoint {endpoint} error: {str(e)}"
+                    last_error = f"{url} -> Exception: {str(e)}"
         raise Exception(f"Aucun endpoint n'a fonctionné. Dernière erreur: {last_error}")
