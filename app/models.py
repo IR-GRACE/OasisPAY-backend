@@ -49,15 +49,12 @@ class Paiement(Base):
     devise = Column(String(3), default="CDF")
     type_frais = Column(String(50), nullable=False)
     methode_paiement = Column(String(50))
-    numero_telephone = Column(String(20))
+    telephone = Column(String(20))
     statut = Column(String(20), default="PENDING")
     reference = Column(String(100), unique=True, index=True)
-    transaction_id = Column(String(100))
-    date_paiement = Column(DateTime)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    etudiant = relationship("Etudiant", back_populates="paiements")
-class Notification(Base):
+    etudiant = relationship("Etudiant", back_populates="paiements")class Notification(Base):
     __tablename__ = "notifications"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("utilisateurs.id"), nullable=False)
