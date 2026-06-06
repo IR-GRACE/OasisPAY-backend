@@ -1,7 +1,8 @@
 ﻿from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
 from sqlalchemy.orm import Session
 from ..database import get_db
-from ..models import Paiement, Etudiant, Notification
+from ..models import Paiement, Etudiant
+# from ..models import Notification  # Temporairement commenté car le modèle n'existe pas
 from ..services.shwary_pay import ShwaryService
 from ..services.email_service import send_payment_receipt_email
 from pydantic import BaseModel
@@ -18,16 +19,15 @@ class PaymentRequest(BaseModel):
     telephone: str
     email_utilisateur: Optional[str] = None
 
-# Version simplifiée de get_current_user pour éviter l'erreur (on n'utilise pas le modèle directement)
+# Version simplifiée de get_current_user pour éviter l'erreur
 async def get_current_user_simple(token: str = None, db: Session = Depends(get_db)):
-    # Pour la démo, on retourne un dict vide
     return {"id": 1, "email": "demo@oasispay.com", "role": "super_admin"}
 
 @router.post("/initier", response_model=None)
 async def initier_paiement(
     request: PaymentRequest,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user_simple)  # Utilisation d'un dict au lieu de Utilisateur
+    current_user: dict = Depends(get_current_user_simple)
 ):
     etudiant = db.query(Etudiant).filter(Etudiant.id == request.etudiant_id).first()
     if not etudiant:
@@ -56,3 +56,21 @@ async def initier_paiement(
         return {"status": "processing", "reference": result.get("reference"), "message": "Paiement initié"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+# Webhook (commenté pour éviter l'import de Notification)
+# @router.post("/webhook/shwary")
+# async def shwary_webhook(request: Request, db: Session = Depends(get_db)):
+#     payload = await request.json()
+#     status = payload.get("status")
+#     reference = payload.get("reference")
+#     if not reference:
+#         raise HTTPException(400, "Missing reference")
+#     paiement = db.query(Paiement).filter(Paiement.reference == reference).first()
+#     if not paiement:
+#         raise HTTPException(404, "Paiement non trouvé")
+#     if status == "success":
+#         paiement.statut = "SUCCESS"
+#     elif status == "failed":
+#         paiement.statut = "FAILED"
+#     db.commit()
+#     return {"status": "ok"}
