@@ -8,19 +8,19 @@ class ShwaryService:
     def __init__(self):
         self.merchant_id = os.getenv("SHWARY_MERCHANT_ID")
         self.merchant_key = os.getenv("SHWARY_MERCHANT_KEY")
-        self.sandbox = os.getenv("SHWARY_SANDBOX", "true") == "true"
         self.base_url = "https://api.shwary.com"
         if not self.merchant_id or not self.merchant_key:
             raise ValueError("Shwary credentials manquantes")
 
     def _normaliser_telephone(self, telephone: str) -> str:
+        # Convertir en format international +243XXXXXXXXX
         chiffres = re.sub(r'\D', '', telephone)
         if len(chiffres) == 9:
-            return '243' + chiffres
+            return '+243' + chiffres
         elif len(chiffres) == 10 and chiffres.startswith('0'):
-            return '243' + chiffres[1:]
+            return '+243' + chiffres[1:]
         elif len(chiffres) == 12 and chiffres.startswith('243'):
-            return chiffres
+            return '+' + chiffres
         else:
             raise ValueError(f"Numéro invalide: {telephone}")
 
@@ -39,6 +39,9 @@ class ShwaryService:
         if not reference:
             reference = f"OASIS_{uuid.uuid4().hex[:12].upper()}"
 
+        # Endpoint correct selon l'API Shwary (d'après leur SDK PHP)
+        endpoint = f"{self.base_url}/api/v1/payment"
+
         payload = {
             "merchant_id": self.merchant_id,
             "amount": round(montant, 2),
@@ -56,12 +59,12 @@ class ShwaryService:
         }
 
         print(f"=== SHWARY PAYMENT ===")
-        print(f"URL: {self.base_url}/payment")
+        print(f"URL: {endpoint}")
         print(f"Payload: {payload}")
 
         async with httpx.AsyncClient(timeout=30.0) as client:
             try:
-                response = await client.post(f"{self.base_url}/payment", json=payload, headers=headers)
+                response = await client.post(endpoint, json=payload, headers=headers)
                 print(f"Status: {response.status_code}")
                 print(f"Response: {response.text}")
                 if response.status_code in (200, 201):
