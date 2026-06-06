@@ -11,7 +11,7 @@ class Utilisateur(Base):
     email = Column(String(255), unique=True, index=True, nullable=False)
     nom = Column(String(100), nullable=False)
     prenom = Column(String(100))
-    numero_telephone = Column(String(20))
+    telephone = Column(String(20))
     hashed_password = Column(String(255), nullable=False)
     role = Column(String(50), default="user")
     actif = Column(Boolean, default=True)
@@ -49,12 +49,16 @@ class Paiement(Base):
     devise = Column(String(3), default="CDF")
     type_frais = Column(String(50), nullable=False)
     methode_paiement = Column(String(50))
-    telephone = Column(String(20))
+    numero_telephone = Column(String(20))
     statut = Column(String(20), default="PENDING")
     reference = Column(String(100), unique=True, index=True)
+    transaction_id = Column(String(100), nullable=True)
+    date_paiement = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    etudiant = relationship("Etudiant", back_populates="paiements")class Notification(Base):
+    etudiant = relationship("Etudiant", back_populates="paiements")
+
+class Notification(Base):
     __tablename__ = "notifications"
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("utilisateurs.id"), nullable=False)
