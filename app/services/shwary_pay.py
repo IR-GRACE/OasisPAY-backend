@@ -13,7 +13,6 @@ class ShwaryService:
             raise ValueError("Shwary credentials manquantes")
 
     def _normaliser_telephone(self, telephone: str) -> str:
-        # Convertir en format international +243XXXXXXXXX
         chiffres = re.sub(r'\D', '', telephone)
         if len(chiffres) == 9:
             return '+243' + chiffres
@@ -39,8 +38,18 @@ class ShwaryService:
         if not reference:
             reference = f"OASIS_{uuid.uuid4().hex[:12].upper()}"
 
-        # Endpoint correct selon l'API Shwary (d'après leur SDK PHP)
-        endpoint = f"{self.base_url}/api/v1/payment"
+        # Liste des endpoints à essayer (ordre probable)
+        endpoints = [
+            "/v1/payment/initiate",
+            "/payment/initiate",
+            "/payment",
+            "/api/payment"
+        ]
+
+        headers = {
+            "Authorization": f"Bearer {self.merchant_key}",
+            "Content-Type": "application/json"
+        }
 
         payload = {
             "merchant_id": self.merchant_id,
@@ -53,23 +62,18 @@ class ShwaryService:
             "callback_url": os.getenv("SHWARY_CALLBACK_URL")
         }
 
-        headers = {
-            "Authorization": f"Bearer {self.merchant_key}",
-            "Content-Type": "application/json"
-        }
-
-        print(f"=== SHWARY PAYMENT ===")
-        print(f"URL: {endpoint}")
-        print(f"Payload: {payload}")
-
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            try:
-                response = await client.post(endpoint, json=payload, headers=headers)
-                print(f"Status: {response.status_code}")
-                print(f"Response: {response.text}")
-                if response.status_code in (200, 201):
-                    return response.json()
-                else:
-                    raise Exception(f"Shwary error: {response.text}")
-            except Exception as e:
-                raise Exception(f"Erreur de connexion Shwary: {str(e)}")
+        last_error = None
+        for endpoint in endpoints:
+            url = f"{self.base_url}{endpoint}"
+            print(f"Trying endpoint: {url}")
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                try:
+                    response = await client.post(url, json=payload, headers=headers)
+                    print(f"Status: {response.status_code}, Response: {response.text}")
+                    if response.status_code in (200, 201):
+                        return response.json()
+                    else:
+                        last_error = f"Endpoint {endpoint} returned {response.status_code}: {response.text}"
+                except Exception as e:
+                    last_error = f"Endpoint {endpoint} error: {str(e)}"
+        raise Exception(f"Aucun endpoint n'a fonctionné. Dernière erreur: {last_error}")
