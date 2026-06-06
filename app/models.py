@@ -11,7 +11,7 @@ class Utilisateur(Base):
     email = Column(String(255), unique=True, index=True, nullable=False)
     nom = Column(String(100), nullable=False)
     prenom = Column(String(100))
-    telephone = Column(String(20))
+    numero_telephone = Column(String(20))
     hashed_password = Column(String(255), nullable=False)
     role = Column(String(50), default="user")
     actif = Column(Boolean, default=True)
@@ -50,7 +50,7 @@ class Paiement(Base):
     statut = Column(String(20), default="PENDING")
     methode_paiement = Column(String(50))
     reference = Column(String(100), unique=True, index=True)
-    telephone = Column(String(20))
+    numero_telephone = Column(String(20))
     created_at = Column(DateTime, default=datetime.utcnow)
 
     etudiant = relationship("Etudiant", back_populates="paiements")
