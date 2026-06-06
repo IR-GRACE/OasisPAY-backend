@@ -49,19 +49,29 @@ async def initier_paiement(
         return {"status": "processing", "reference": result.get("reference"), "message": "Paiement initié"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
 @router.post("/webhook/shwary")
 async def shwary_webhook(request: Request, db: Session = Depends(get_db)):
-    payload = await request.json()
+    import json
+    try:
+        payload = await request.json()
+    except:
+        body = await request.body()
+        payload = json.loads(body.decode('utf-8'))
     print(f"=== SHWARY WEBHOOK RECEIVED ===")
     print(f"Payload: {payload}")
+    if isinstance(payload, str):
+        payload = json.loads(payload)
     transaction_id = payload.get("id")
     status = payload.get("status")
     reference = payload.get("referenceId")
     failure_reason = payload.get("failureReason")
     if not reference:
+        print("No referenceId, skipping")
         return {"status": "ignored"}
     paiement = db.query(Paiement).filter(Paiement.reference == reference).first()
     if not paiement:
+        print(f"Paiement not found for reference {reference}")
         return {"status": "not found"}
     if status == "completed":
         paiement.statut = "SUCCESS"
