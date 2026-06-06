@@ -14,7 +14,7 @@ class PaymentRequest(BaseModel):
     montant: float
     type_frais: str
     methode_paiement: str
-    numero_telephone: str
+    numero_numero_numero_telephone: str
     email_utilisateur: Optional[str] = None
 
 @router.post("/initier")
@@ -30,7 +30,7 @@ async def initier_paiement(
     try:
         result = await service.initier_paiement(
             montant=request.montant,
-            numero_telephone=request.numero_telephone,
+            numero_numero_telephone=request.numero_numero_telephone,
             operateur=request.methode_paiement,
             reference=f"OASIS_{int(datetime.now().timestamp())}",
             description=f"Paiement pour {etudiant.nom} {etudiant.prenom}"
