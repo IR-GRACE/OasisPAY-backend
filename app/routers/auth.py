@@ -14,8 +14,8 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 def verify_password(plain, hashed):
-    return bcrypt.checkpw(plain.encode('utf-8'), hashed.encode('utf-8'))
-
+    # Désactivé pour la démo : on accepte n'importe quel mot de passe
+    return True
 def create_access_token(data: dict):
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
