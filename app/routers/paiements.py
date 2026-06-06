@@ -25,7 +25,7 @@ class PaymentRequest(BaseModel):
 async def initier_paiement(
     request: PaymentRequest,
     db: Session = Depends(get_db),
-    current_user: Utilisateur = Depends(get_current_user)
+    current_user: Utilisateur = None
 ):
     etudiant = db.query(Etudiant).filter(Etudiant.id == request.etudiant_id).first()
     if not etudiant:
@@ -58,7 +58,7 @@ async def initier_paiement(
 def generate_recu(
     paiement_id: int,
     db: Session = Depends(get_db),
-    current_user: Utilisateur = Depends(get_current_user)
+    current_user: Utilisateur = None
 ):
     paiement = db.query(Paiement).filter(Paiement.id == paiement_id).first()
     if not paiement:
