@@ -136,3 +136,33 @@ def get_audit_logs(
         }
         for l in logs
     ]
+
+# =========================
+# PAIEMENTS
+# =========================
+
+@router.get("/payments")
+def get_payments(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    paiements = (
+        db.query(Paiement)
+        .order_by(Paiement.created_at.desc())
+        .all()
+    )
+
+    return [
+        {
+            "id": p.id,
+            "reference": p.reference,
+            "montant": float(p.montant),
+            "devise": p.devise,
+            "statut": p.statut,
+            "type_frais": p.type_frais,
+            "date_paiement": str(p.date_paiement),
+            "created_at": str(p.created_at)
+        }
+        for p in paiements
+    ]
+
