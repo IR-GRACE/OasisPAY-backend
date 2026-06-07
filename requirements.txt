@@ -12,3 +12,5 @@ httpx>=0.24.0
 
 reportlab==4.0.4
 slowapi
+
+email-validator>=2.2.0
