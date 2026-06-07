@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
+ï»¿from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
@@ -55,7 +55,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     if not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Mot de passe incorrect")
     if not user.actif:
-        raise HTTPException(status_code=403, detail="Compte désactivé")
+        raise HTTPException(status_code=403, detail="Compte dÃ©sactivÃ©")
     access_token = create_access_token(data={"sub": user.email})
     return {
         "access_token": access_token,
@@ -73,7 +73,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 def register(user_data: dict, db: Session = Depends(get_db)):
     existing = db.query(User).filter(User.email == user_data["email"]).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Email déjà utilisé")
+        raise HTTPException(status_code=400, detail="Email dï¿½jï¿½ utilisï¿½")
     hashed = get_password_hash(user_data["password"])
     new_user = User(
         email=user_data["email"],
@@ -88,7 +88,7 @@ def register(user_data: dict, db: Session = Depends(get_db)):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return {"message": "Compte créé avec succès", "user_id": new_user.id}
+    return {"message": "Compte crï¿½ï¿½ avec succï¿½s", "user_id": new_user.id}
 
 @router.get("/me")
 def get_me(current_user: User = Depends(get_current_user)):
@@ -126,32 +126,32 @@ def update_profile(
         "role": current_user.role
     }
 
-# Stockage temporaire des tokens de réinitialisation (à remplacer par Redis)
+# Stockage temporaire des tokens de rï¿½initialisation (ï¿½ remplacer par Redis)
 reset_tokens: Dict[str, str] = {}
 
 @router.post("/forgot-password")
 def forgot_password(email: str, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == email).first()
     if not user:
-        raise HTTPException(status_code=404, detail="Email non trouvé")
+        raise HTTPException(status_code=404, detail="Email non trouvï¿½")
     token = secrets.token_urlsafe(32)
     reset_tokens[token] = email
     # Ici vous pouvez appeler un service d'envoi d'email
-    print(f"Lien de réinitialisation : https://oasispay-frontend.com/reset-password?token={token}")
-    return {"message": "Email de réinitialisation envoyé"}
+    print(f"Lien de rï¿½initialisation : https://oasispay-frontend.com/reset-password?token={token}")
+    return {"message": "Email de rï¿½initialisation envoyï¿½"}
 
 @router.post("/reset-password")
 def reset_password(token: str, new_password: str, db: Session = Depends(get_db)):
     email = reset_tokens.get(token)
     if not email:
-        raise HTTPException(status_code=400, detail="Token invalide ou expiré")
+        raise HTTPException(status_code=400, detail="Token invalide ou expirï¿½")
     user = db.query(User).filter(User.email == email).first()
     if not user:
-        raise HTTPException(status_code=404, detail="User non trouvé")
+        raise HTTPException(status_code=404, detail="User non trouvï¿½")
     user.hashed_password = get_password_hash(new_password)
     db.commit()
     del reset_tokens[token]
-    return {"message": "Mot de passe modifié avec succès"}
+    return {"message": "Mot de passe modifiï¿½ avec succï¿½s"}
 
 @router.post("/change-password")
 def change_password(old_password: str, new_password: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -159,4 +159,4 @@ def change_password(old_password: str, new_password: str, db: Session = Depends(
         raise HTTPException(status_code=401, detail="Ancien mot de passe incorrect")
     current_user.hashed_password = get_password_hash(new_password)
     db.commit()
-    return {"message": "Mot de passe modifié avec succès"}
+    return {"message": "Mot de passe modifiï¿½ avec succï¿½s"}
