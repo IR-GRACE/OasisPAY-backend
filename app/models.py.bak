@@ -1,71 +1,64 @@
-﻿from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Text, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
-from datetime import datetime
+﻿from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey, Numeric, JSON, Enum, UUID
+from sqlalchemy.sql import func
+from sqlalchemy.dialects.postgresql import INET
+from app.database import Base
+import uuid
 
-Base = declarative_base()
-
-class Utilisateur(Base):
-    __tablename__ = "utilisateurs"
+class User(Base):
+    __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
-    email = Column(String(255), unique=True, index=True, nullable=False)
-    nom = Column(String(100), nullable=False)
+    email = Column(String(255), unique=True, nullable=False, index=True)
+    nom = Column(String(100))
     prenom = Column(String(100))
-    telephone = Column(String(20))
-    hashed_password = Column(String(255), nullable=False)
-    role = Column(String(50), default="user")
+    telephone = Column(String(20), unique=True)
+    hashed_password = Column(String(60), nullable=False)
+    role = Column(String(50), nullable=False, default="user")
     actif = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    notifications = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
-    etudiants = relationship("Etudiant", back_populates="parent")
+class UserSession(Base):
+    __tablename__ = "user_sessions"
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    refresh_token = Column(Text, nullable=False)
+    user_agent = Column(Text)
+    ip_address = Column(INET)
+    device_fingerprint = Column(Text)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    revoked = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-class Etudiant(Base):
-    __tablename__ = "etudiants"
-    id = Column(Integer, primary_key=True, index=True)
-    nom = Column(String(100), nullable=False)
-    prenom = Column(String(100), nullable=False)
-    matricule = Column(String(50), unique=True, index=True)
-    parent_id = Column(Integer, ForeignKey("utilisateurs.id"))
-    classe_id = Column(Integer)
-    actif = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+class BlacklistedToken(Base):
+    __tablename__ = "blacklisted_tokens"
+    jti = Column(String, primary_key=True, index=True)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    parent = relationship("Utilisateur", back_populates="etudiants")
-    paiements = relationship("Paiement", back_populates="etudiant")
+class OtpCode(Base):
+    __tablename__ = "otp_codes"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    code = Column(String(6), nullable=False)
+    type = Column(String(20), nullable=False)
+    purpose = Column(String(50), nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    used = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-class Classe(Base):
-    __tablename__ = "classes"
-    id = Column(Integer, primary_key=True, index=True)
-    nom = Column(String(100), nullable=False)
-    frais_scolarite = Column(Float, default=0)
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
+    action = Column(String(100), nullable=False)
+    resource_type = Column(String(50))
+    resource_id = Column(String(100))
+    ip_address = Column(INET)
+    user_agent = Column(Text)
+    old_value = Column(JSON)
+    new_value = Column(JSON)
+    status = Column(String(20))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-class Paiement(Base):
-    __tablename__ = "paiements"
-    id = Column(Integer, primary_key=True, index=True)
-    etudiant_id = Column(Integer, ForeignKey("etudiants.id"), nullable=False)
-    montant = Column(Float, nullable=False)
-    devise = Column(String(3), default="CDF")
-    type_frais = Column(String(50), nullable=False)
-    methode_paiement = Column(String(50))
-    numero_telephone = Column(String(20))
-    statut = Column(String(20), default="PENDING")
-    reference = Column(String(100), unique=True, index=True)
-    transaction_id = Column(String(100), nullable=True)
-    date_paiement = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-    etudiant = relationship("Etudiant", back_populates="paiements")
-
-class Notification(Base):
-    __tablename__ = "notifications"
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("utilisateurs.id"), nullable=False)
-    type = Column(String(50), nullable=False)
-    title = Column(String(255), nullable=False)
-    message = Column(Text, nullable=False)
-    is_read = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-    user = relationship("Utilisateur", back_populates="notifications")
+# Ajoutez ici les autres modèles (Paiement, Transaction, Wallet, etc.)

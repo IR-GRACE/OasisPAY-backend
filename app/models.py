@@ -1,4 +1,4 @@
-﻿from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey, Numeric, JSON, Enum, UUID
+﻿from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey, JSON, UUID
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import INET
 from app.database import Base
@@ -60,5 +60,3 @@ class AuditLog(Base):
     new_value = Column(JSON)
     status = Column(String(20))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-
-# Ajoutez ici les autres modèles (Paiement, Transaction, Wallet, etc.)
