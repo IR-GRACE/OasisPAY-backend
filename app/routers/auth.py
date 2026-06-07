@@ -1,7 +1,7 @@
 ﻿from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks, Form
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from jose import JWTError, jwt
 import bcrypt
 import secrets
@@ -34,12 +34,12 @@ def get_password_hash(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 def create_access_token(data: dict) -> str:
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     data.update({"exp": expire, "type": "access"})
     return jwt.encode(data, SECRET_KEY, algorithm=ALGORITHM)
 
 def create_refresh_token(data: dict) -> str:
-    expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     data.update({"exp": expire, "type": "refresh"})
     return jwt.encode(data, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -81,7 +81,7 @@ async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends
         refresh_token=refresh_token,
         user_agent=get_user_agent(request),
         ip_address=get_client_ip(request),
-        expires_at=datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+        expires_at=datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     )
     db.add(session)
     db.commit()
@@ -96,7 +96,7 @@ def refresh(refresh_token: str = Form(...), db: Session = Depends(get_db)):
             raise HTTPException(status_code=401, detail="Invalid token type")
         user_id = int(payload.get("sub"))
         session = db.query(UserSession).filter(UserSession.refresh_token == refresh_token, UserSession.revoked == False).first()
-        if not session or session.expires_at < datetime.utcnow():
+        if not session or session.expires_at < datetime.now(timezone.utc):
             raise HTTPException(status_code=401, detail="Session expired or revoked")
         session.revoked = True
         db.commit()
@@ -107,7 +107,7 @@ def refresh(refresh_token: str = Form(...), db: Session = Depends(get_db)):
             refresh_token=new_refresh,
             user_agent=session.user_agent,
             ip_address=session.ip_address,
-            expires_at=datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+            expires_at=datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
         )
         db.add(new_session)
         db.commit()
@@ -131,7 +131,7 @@ async def send_verification_email(request: Request, current_user: User = Depends
         code=token,
         type="email",
         purpose="email_verification",
-        expires_at=datetime.utcnow() + timedelta(hours=24)
+        expires_at=datetime.now(timezone.utc) + timedelta(hours=24)
     )
     db.add(otp)
     db.commit()
@@ -141,7 +141,7 @@ async def send_verification_email(request: Request, current_user: User = Depends
 
 @router.post("/verify-email")
 def verify_email(token: str, db: Session = Depends(get_db)):
-    otp = db.query(OtpCode).filter(OtpCode.code == token, OtpCode.used == False, OtpCode.expires_at > datetime.utcnow()).first()
+    otp = db.query(OtpCode).filter(OtpCode.code == token, OtpCode.used == False, OtpCode.expires_at > datetime.now(timezone.utc)).first()
     if not otp:
         raise HTTPException(status_code=400, detail="Token invalide ou expiré")
     user = db.query(User).filter(User.id == otp.user_id).first()

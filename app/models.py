@@ -83,7 +83,7 @@ class Paiement(Base):
     montant = Column(Numeric(10,2))
     devise = Column(String(3), default="CDF")
     type_frais = Column(String(50))
-    methode = Column(String(50))
+    methode_paiement = Column(String(50))
     numero_telephone = Column(String(20))
     statut = Column(String(20), default="pending")
     transaction_id = Column(String(100))
