@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from ..database import get_db
 from ..models import Etudiant, User, Classe
-from .auth import get_current_user
+from ..auth import get_current_user, require_admin
 from typing import Optional
 
 router = APIRouter(prefix="/etudiants", tags=["etudiants"])
