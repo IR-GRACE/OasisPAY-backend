@@ -197,3 +197,12 @@ def verify_email(token: str, db: Session = Depends(get_db)):
     db.commit()
     return {"msg": "Email vérifié avec succès"}
 
+
+def require_admin(current_user: User = Depends(get_current_user)):
+    if current_user.role not in ["super_admin", "admin_ecole", "directeur"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Droits administrateur requis"
+        )
+    return current_user
+
