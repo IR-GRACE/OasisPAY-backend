@@ -23,6 +23,7 @@ REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
 
+# ---------- Fonctions utilitaires ----------
 def verify_password(plain: str, hashed: str) -> bool:
     try:
         return bcrypt.checkpw(plain.encode('utf-8'), hashed.encode('utf-8'))
@@ -48,6 +49,22 @@ def get_client_ip(request: Request) -> str:
 def get_user_agent(request: Request) -> str:
     return request.headers.get("user-agent", "")
 
+# ---------- Dépendance d'authentification ----------
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(status_code=401, detail="Could not validate credentials")
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = int(payload.get("sub"))
+        if user_id is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+    user = db.query(User).filter(User.id == user_id).first()
+    if user is None:
+        raise credentials_exception
+    return user
+
+# ---------- Routes ----------
 @router.post("/login")
 @limiter.limit("5/minute")
 async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
@@ -110,7 +127,6 @@ def logout(refresh_token: str, db: Session = Depends(get_db)):
 
 @router.post("/send-verification-email")
 async def send_verification_email(request: Request, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    # Générer un token sécurisé
     token = secrets.token_urlsafe(32)
     otp = OtpCode(
         user_id=current_user.id,
@@ -137,18 +153,3 @@ def verify_email(token: str, db: Session = Depends(get_db)):
     otp.used = True
     db.commit()
     return {"msg": "Email vérifié avec succès"}
-
-# Fonction get_current_user à ajouter (si absente)
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    credentials_exception = HTTPException(status_code=401, detail="Could not validate credentials")
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = int(payload.get("sub"))
-        if user_id is None:
-            raise credentials_exception
-    except JWTError:
-        raise credentials_exception
-    user = db.query(User).filter(User.id == user_id).first()
-    if user is None:
-        raise credentials_exception
-    return user
