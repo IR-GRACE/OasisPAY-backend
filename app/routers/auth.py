@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks
+﻿from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks, Form
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
@@ -76,7 +76,6 @@ async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends
         raise HTTPException(status_code=403, detail="Compte désactivé")
     access_token = create_access_token({"sub": str(user.id)})
     refresh_token = create_refresh_token({"sub": str(user.id)})
-    # Sauvegarder la session
     session = UserSession(
         user_id=user.id,
         refresh_token=refresh_token,
@@ -89,7 +88,8 @@ async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends
     log_audit(db, user.id, "login_success", ip=get_client_ip(request), ua=get_user_agent(request))
     return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
 
-@router.post("/refresh")\ndef refresh(refresh_token: str = Form(...), db: Session = Depends(get_db)):
+@router.post("/refresh")
+def refresh(refresh_token: str = Form(...), db: Session = Depends(get_db)):
     try:
         payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
         if payload.get("type") != "refresh":
@@ -98,7 +98,6 @@ async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends
         session = db.query(UserSession).filter(UserSession.refresh_token == refresh_token, UserSession.revoked == False).first()
         if not session or session.expires_at < datetime.utcnow():
             raise HTTPException(status_code=401, detail="Session expired or revoked")
-        # Révoquer l'ancienne session
         session.revoked = True
         db.commit()
         new_access = create_access_token({"sub": str(user_id)})
