@@ -1,10 +1,11 @@
+﻿from . import models
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine
 from .models import Base
 from .routers import auth, etudiants, paiements, admin, classes, notifications
 
-# Créer les tables
+# CrÃ©er les tables
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="OasisPAY API", version="2.0.0")
@@ -31,3 +32,4 @@ def root():
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
