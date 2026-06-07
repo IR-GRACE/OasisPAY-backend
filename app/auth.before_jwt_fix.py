@@ -51,11 +51,11 @@ async def get_current_user(
         raise HTTPException(status_code=401, detail="Non authentifié")
     
     payload = decode_token(token)
-    user_id = payload.get("sub")
-    if not user_id:
+    email: str = payload.get("sub")
+    if not email:
         raise HTTPException(status_code=401, detail="Token invalide")
     
-    user = db.query(models.User).filter(models.User.id == int(user_id)).first()
+    user = db.query(models.User).filter(models.User.email == email).first()
     if not user:
         raise HTTPException(status_code=401, detail="User non trouvé")
     if not user.actif:
@@ -83,4 +83,3 @@ async def require_super_admin(
     if current_user.role != models.RoleEnum.SUPER_ADMIN:
         raise HTTPException(status_code=403, detail="Droits super administrateur requis")
     return current_user
-
