@@ -20,15 +20,20 @@ app.add_middleware(
 
 app.include_router(auth.router, prefix="/api/v1")
 
-app.include_router(users.router, prefix="/api/v1")app.include_router(etudiants.router, prefix="/api/v1")
+app.include_router(users.router, prefix="/api/v1")
+app.include_router(etudiants.router, prefix="/api/v1")
 
-app.include_router(users.router, prefix="/api/v1")app.include_router(paiements.router, prefix="/api/v1")
+app.include_router(users.router, prefix="/api/v1")
+app.include_router(paiements.router, prefix="/api/v1")
 
-app.include_router(users.router, prefix="/api/v1")app.include_router(admin.router, prefix="/api/v1")
+app.include_router(users.router, prefix="/api/v1")
+app.include_router(admin.router, prefix="/api/v1")
 
-app.include_router(users.router, prefix="/api/v1")app.include_router(classes.router, prefix="/api/v1")
+app.include_router(users.router, prefix="/api/v1")
+app.include_router(classes.router, prefix="/api/v1")
 
-app.include_router(users.router, prefix="/api/v1")app.include_router(notifications.router, prefix="/api/v1")
+app.include_router(users.router, prefix="/api/v1")
+app.include_router(notifications.router, prefix="/api/v1")
 
 
 app.include_router(users.router, prefix="/api/v1")@app.get("/")
