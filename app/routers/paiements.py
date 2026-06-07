@@ -1,87 +1,30 @@
-﻿from fastapi import APIRouter, Depends, HTTPException, Request
+﻿from fastapi import APIRouter, Request, Depends, HTTPException
 from sqlalchemy.orm import Session
-from ..database import get_db
-from ..models import Paiement, Etudiant
-from ..services.shwary_pay import ShwaryService
-from pydantic import BaseModel
-from typing import Optional
 from datetime import datetime
+from ..database import get_db
+from ..models import Paiement
 
 router = APIRouter(prefix="/paiements", tags=["paiements"])
 
-class PaymentRequest(BaseModel):
-    etudiant_id: int
-    montant: float
-    type_frais: str
-    methode_paiement: str
-    telephone: str
-    email_utilisateur: Optional[str] = None
-
-@router.post("/initier")
-async def initier_paiement(
-    request: PaymentRequest,
-    db: Session = Depends(get_db)
-):
-    etudiant = db.query(Etudiant).filter(Etudiant.id == request.etudiant_id).first()
-    if not etudiant:
-        raise HTTPException(status_code=404, detail="étudiant non trouvé")
-
-    service = ShwaryService()
-    try:
-        result = await service.initier_paiement(
-            montant=request.montant,
-            telephone=request.telephone,
-            operateur=request.methode_paiement,
-            reference=f"OASIS_{int(datetime.now().timestamp())}",
-            description=f"Paiement pour {etudiant.nom} {etudiant.prenom}"
-        )
-        paiement = Paiement(
-            etudiant_id=request.etudiant_id,
-            montant=request.montant,
-            type_frais=request.type_frais,
-            statut="PENDING",
-            methode_paiement=request.methode_paiement,
-            reference=result.get("reference"),
-            created_at=datetime.utcnow()
-        )
-        db.add(paiement)
-        db.commit()
-        return {"status": "processing", "reference": result.get("reference"), "message": "Paiement initié"}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
 @router.post("/webhook/shwary")
 async def shwary_webhook(request: Request, db: Session = Depends(get_db)):
-    import json
-    try:
-        payload = await request.json()
-    except:
-        body = await request.body()
-        payload = json.loads(body.decode('utf-8'))
-    print(f"=== SHWARY WEBHOOK RECEIVED ===")
-    print(f"Payload: {payload}")
-    if isinstance(payload, str):
-        payload = json.loads(payload)
+    payload = await request.json()
     transaction_id = payload.get("id")
     status = payload.get("status")
     reference = payload.get("referenceId")
+    amount = payload.get("amount")
+    currency = payload.get("currency")
     failure_reason = payload.get("failureReason")
-    if not reference:
-        print("No referenceId, skipping")
-        return {"status": "ignored"}
+    # Chercher le paiement par référence
     paiement = db.query(Paiement).filter(Paiement.reference == reference).first()
-    if not paiement:
-        print(f"Paiement not found for reference {reference}")
-        return {"status": "not found"}
-    if status == "completed":
-        paiement.statut = "SUCCESS"
-        if transaction_id:
-            paiement.transaction_id = transaction_id
-    elif status in ("failed", "cancelled"):
-        paiement.statut = "FAILED"
-        paiement.failure_reason = failure_reason
+    if paiement:
+        paiement.statut = status.upper()
+        if status == "completed":
+            paiement.date_paiement = datetime.utcnow()
+        if status in ["failed", "cancelled"]:
+            paiement.failure_reason = failure_reason
+        db.commit()
     else:
-        paiement.statut = "PROCESSING"
-    db.commit()
-    print(f"? Paiement {reference} mis é jour : {paiement.statut}")
+        # Optionnel : créer un nouveau paiement si besoin
+        pass
     return {"status": "ok"}
