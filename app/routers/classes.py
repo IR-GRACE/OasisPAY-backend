@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from ..database import get_db
 from ..models import Classe
-from .auth import get_current_user
+from .auth import get_current_user, require_admin
 from typing import Optional
 
 router = APIRouter(prefix="/classes", tags=["classes"])
@@ -49,3 +49,4 @@ def delete_classe(classe_id: int, db: Session = Depends(get_db)):
     db.delete(db_classe)
     db.commit()
     return {"message": "Classe supprimée"}
+
