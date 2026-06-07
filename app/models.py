@@ -34,9 +34,9 @@ class OtpCode(Base):
     __tablename__ = "otp_codes"
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
-    code = Column(String(255), nullable=False)  # token ou code
-    type = Column(String(20), nullable=False)  # email, sms
-    purpose = Column(String(50), nullable=False)  # email_verification, password_reset, login
+    code = Column(String(255), nullable=False)
+    type = Column(String(20), nullable=False)
+    purpose = Column(String(50), nullable=False)
     expires_at = Column(DateTime(timezone=True), nullable=False)
     used = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -55,5 +55,40 @@ class AuditLog(Base):
     status = Column(String(20))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-# Autres modèles existants (Etudiant, Classe, Paiement, etc.) à conserver
-# Si vous avez déjà ces classes, assurez-vous qu'elles ne sont pas dupliquées
+class Etudiant(Base):
+    __tablename__ = "etudiants"
+    id = Column(Integer, primary_key=True, index=True)
+    nom = Column(String(100))
+    prenom = Column(String(100))
+    matricule = Column(String(50), unique=True)
+    parent_id = Column(Integer, ForeignKey("users.id"))
+    classe_id = Column(Integer, ForeignKey("classes.id"))
+    actif = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class Classe(Base):
+    __tablename__ = "classes"
+    id = Column(Integer, primary_key=True, index=True)
+    nom = Column(String(100))
+    niveau = Column(String(50))
+    frais_inscription = Column(Numeric(10,2), default=0)
+    frais_mensuel = Column(Numeric(10,2), default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class Paiement(Base):
+    __tablename__ = "paiements"
+    id = Column(Integer, primary_key=True, index=True)
+    reference = Column(String(100), unique=True)
+    etudiant_id = Column(Integer, ForeignKey("etudiants.id"))
+    montant = Column(Numeric(10,2))
+    devise = Column(String(3), default="CDF")
+    type_frais = Column(String(50))
+    methode = Column(String(50))
+    numero_telephone = Column(String(20))
+    statut = Column(String(20), default="pending")
+    transaction_id = Column(String(100))
+    date_paiement = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+# Autres modèles (Transaction, Wallet, etc.) peuvent être ajoutés ici si nécessaire
