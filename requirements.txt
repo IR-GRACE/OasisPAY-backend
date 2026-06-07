@@ -11,3 +11,4 @@ pydantic-settings==2.7.0
 httpx>=0.24.0
 
 reportlab==4.0.4
+slowapi
