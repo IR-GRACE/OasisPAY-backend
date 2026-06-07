@@ -8,23 +8,18 @@ router = APIRouter(prefix="/paiements", tags=["paiements"])
 
 @router.post("/webhook/shwary")
 async def shwary_webhook(request: Request, db: Session = Depends(get_db)):
-    payload = await request.json()
-    transaction_id = payload.get("id")
-    status = payload.get("status")
-    reference = payload.get("referenceId")
-    amount = payload.get("amount")
-    currency = payload.get("currency")
-    failure_reason = payload.get("failureReason")
-    # Chercher le paiement par référence
-    paiement = db.query(Paiement).filter(Paiement.reference == reference).first()
-    if paiement:
-        paiement.statut = status.upper()
-        if status == "completed":
-            paiement.date_paiement = datetime.utcnow()
-        if status in ["failed", "cancelled"]:
-            paiement.failure_reason = failure_reason
-        db.commit()
-    else:
-        # Optionnel : créer un nouveau paiement si besoin
-        pass
-    return {"status": "ok"}
+    try:
+        payload = await request.json()
+        reference = payload.get("referenceId")
+        status = payload.get("status")
+        # Mettre à jour le paiement si trouvé (sinon ignorer)
+        paiement = db.query(Paiement).filter(Paiement.reference == reference).first()
+        if paiement:
+            paiement.statut = status.upper()
+            if status == "completed":
+                paiement.date_paiement = datetime.utcnow()
+            db.commit()
+        return {"status": "ok"}
+    except Exception as e:
+        print(f"Webhook error: {e}")
+        return {"status": "error", "detail": str(e)}

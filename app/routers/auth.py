@@ -89,8 +89,7 @@ async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends
     log_audit(db, user.id, "login_success", ip=get_client_ip(request), ua=get_user_agent(request))
     return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer"}
 
-@router.post("/refresh")
-def refresh(refresh_token: str, db: Session = Depends(get_db)):
+@router.post("/refresh")\ndef refresh(refresh_token: str = Form(...), db: Session = Depends(get_db)):
     try:
         payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
         if payload.get("type") != "refresh":
