@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 LANCEMENT DÉMO COMPLÈTE POUR JURISTES
 Configure tout et lance une démo impressionnante

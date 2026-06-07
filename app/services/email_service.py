@@ -1,4 +1,4 @@
-import os
+﻿import os
 import smtplib
 from email.message import EmailMessage
 import logging

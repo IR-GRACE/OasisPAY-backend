@@ -1,4 +1,4 @@
-from celery import Celery
+﻿from celery import Celery
 import smtplib
 from email.message import EmailMessage
 import os

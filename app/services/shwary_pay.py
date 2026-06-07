@@ -1,4 +1,4 @@
-import os
+ï»¿import os
 import httpx
 import uuid
 import re
@@ -23,7 +23,7 @@ class ShwaryService:
         elif len(chiffres) == 12 and chiffres.startswith('243'):
             return '+' + chiffres
         else:
-            raise ValueError(f"Numéro invalide: {telephone}")
+            raise ValueError(f"NumÃ©ro invalide: {telephone}")
 
     async def initier_paiement(self, montant: float, telephone: str, operateur: str, reference: str, description: str) -> Dict[str, Any]:
         telephone_norm = self._normaliser_telephone(telephone)
@@ -31,7 +31,7 @@ class ShwaryService:
         # Montant minimum RDC = 2900 CDF
         montant_int = max(round(montant), 2900)
         
-        # Pays : DRC (République Démocratique du Congo)
+        # Pays : DRC (RÃ©publique DÃ©mocratique du Congo)
         country = "DRC"
         
         # Construction du payload selon la doc Shwary
@@ -41,7 +41,7 @@ class ShwaryService:
             "callbackUrl": os.getenv("SHWARY_CALLBACK_URL")
         }
         
-        # En-têtes : x-merchant-id et x-merchant-key (pas Bearer)
+        # En-tÃ©tes : x-merchant-id et x-merchant-key (pas Bearer)
         headers = {
             "x-merchant-id": self.merchant_id,
             "x-merchant-key": self.merchant_key,
@@ -71,7 +71,7 @@ class ShwaryService:
                         "reference": data.get("referenceId") or data.get("id"),
                         "status": data.get("status"),
                         "transaction_id": data.get("id"),
-                        "message": "Paiement initié avec succès"
+                        "message": "Paiement initiÃ© avec succÃ©s"
                     }
                 else:
                     raise Exception(f"Shwary error {response.status_code}: {response.text}")

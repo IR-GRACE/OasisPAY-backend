@@ -1,4 +1,4 @@
-from ..models import User
+﻿from ..models import User
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import or_

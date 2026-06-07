@@ -1,4 +1,4 @@
-from app.database import SessionLocal
+﻿from app.database import SessionLocal
 from app.models import User
 from app.auth import get_password_hash
 

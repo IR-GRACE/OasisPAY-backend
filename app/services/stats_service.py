@@ -1,4 +1,4 @@
-from sqlalchemy import func, and_
+﻿from sqlalchemy import func, and_
 from datetime import datetime, timedelta
 from ..database import SessionLocal
 from .. import models

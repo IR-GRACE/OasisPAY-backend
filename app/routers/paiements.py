@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+ï»¿from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import Paiement, Etudiant
@@ -24,7 +24,7 @@ async def initier_paiement(
 ):
     etudiant = db.query(Etudiant).filter(Etudiant.id == request.etudiant_id).first()
     if not etudiant:
-        raise HTTPException(status_code=404, detail="Étudiant non trouvé")
+        raise HTTPException(status_code=404, detail="Ã©tudiant non trouvÃ©")
 
     service = ShwaryService()
     try:
@@ -46,7 +46,7 @@ async def initier_paiement(
         )
         db.add(paiement)
         db.commit()
-        return {"status": "processing", "reference": result.get("reference"), "message": "Paiement initié"}
+        return {"status": "processing", "reference": result.get("reference"), "message": "Paiement initiÃ©"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -83,5 +83,5 @@ async def shwary_webhook(request: Request, db: Session = Depends(get_db)):
     else:
         paiement.statut = "PROCESSING"
     db.commit()
-    print(f"? Paiement {reference} mis à jour : {paiement.statut}")
+    print(f"? Paiement {reference} mis Ã© jour : {paiement.statut}")
     return {"status": "ok"}

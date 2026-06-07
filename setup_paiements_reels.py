@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Script pour configurer les paiements réels dans EduPay
 Exécute ce script après avoir obtenu tes clés API

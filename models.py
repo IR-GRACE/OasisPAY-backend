@@ -1,1 +1,1 @@
-devise = Column(String(3), default='CDF')
+﻿devise = Column(String(3), default='CDF')

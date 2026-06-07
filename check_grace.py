@@ -1,4 +1,4 @@
-import os
+﻿import os
 from sqlalchemy import create_engine, text
 
 DATABASE_URL = 'postgresql://postgres:KdNPvevjoUfFtHEoKuSDQvejpYTtSiWg@monorail.proxy.rlwy.net:41061/railway'

@@ -1,4 +1,4 @@
-import psycopg2
+﻿import psycopg2
 
 conn = psycopg2.connect('postgresql://postgres:KdNPvevjoUfFtHEoKuSDQvejpYTtSiWg@monorail.proxy.rlwy.net:41061/railway')
 conn.autocommit = True

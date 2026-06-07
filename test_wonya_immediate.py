@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 TEST IMMÉDIAT WONYAPAY - Paiements réels
 Exécute ce script pour tester TA clé API WonyaPay

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Script simple pour ajouter GRACE directement dans la base SQLite
 """

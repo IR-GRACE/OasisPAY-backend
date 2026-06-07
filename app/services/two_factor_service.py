@@ -1,4 +1,4 @@
-import pyotp
+﻿import pyotp
 import qrcode
 import io
 import base64
