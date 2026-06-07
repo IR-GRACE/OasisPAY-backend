@@ -5,14 +5,14 @@ from pydantic import BaseModel, Field
 
 class UserCreate(BaseModel):
     email: str
-    full_name: Optional[str] = Field(None, description="Nom complet de l'utilisateur")
+    full_name: Optional[str] = Field(None, description="Nom complet de l'User")
 
 
 class UserRegisterRequest(BaseModel):
-    email: str = Field(..., description="Email de l'utilisateur")
+    email: str = Field(..., description="Email de l'User")
     password: str = Field(..., min_length=6, description="Mot de passe")
-    full_name: str = Field(..., description="Nom complet de l'utilisateur")
-    role: str = Field(..., description="Rôle de l'utilisateur")
+    full_name: str = Field(..., description="Nom complet de l'User")
+    role: str = Field(..., description="Rôle de l'User")
     student_id: Optional[str] = Field(None, description="Matricule de l'étudiant")
 
 
@@ -30,7 +30,7 @@ class UserRead(BaseModel):
 
 
 class UserStatusUpdate(BaseModel):
-    approved: bool = Field(True, description="Approuver ou rejeter l'utilisateur")
+    approved: bool = Field(True, description="Approuver ou rejeter l'User")
 
 
 class UserUpdate(BaseModel):

@@ -46,7 +46,7 @@ def decode_token(token: str) -> dict:
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db)
-) -> models.Utilisateur:
+) -> models.User:
     if not token:
         raise HTTPException(status_code=401, detail="Non authentifié")
     
@@ -55,31 +55,31 @@ async def get_current_user(
     if not email:
         raise HTTPException(status_code=401, detail="Token invalide")
     
-    user = db.query(models.Utilisateur).filter(models.Utilisateur.email == email).first()
+    user = db.query(models.User).filter(models.User.email == email).first()
     if not user:
-        raise HTTPException(status_code=401, detail="Utilisateur non trouvé")
+        raise HTTPException(status_code=401, detail="User non trouvé")
     if not user.actif:
         raise HTTPException(status_code=403, detail="Compte désactivé")
     
     return user
 
 async def get_current_active_user(
-    current_user: models.Utilisateur = Depends(get_current_user)
-) -> models.Utilisateur:
+    current_user: models.User = Depends(get_current_user)
+) -> models.User:
     if not current_user.actif:
         raise HTTPException(status_code=403, detail="Compte désactivé")
     return current_user
 
 async def require_admin(
-    current_user: models.Utilisateur = Depends(get_current_active_user)
-) -> models.Utilisateur:
+    current_user: models.User = Depends(get_current_active_user)
+) -> models.User:
     if current_user.role not in [models.RoleEnum.SUPER_ADMIN, models.RoleEnum.ADMIN_ECOLE, models.RoleEnum.DIRECTEUR]:
         raise HTTPException(status_code=403, detail="Droits administrateur requis")
     return current_user
 
 async def require_super_admin(
-    current_user: models.Utilisateur = Depends(get_current_active_user)
-) -> models.Utilisateur:
+    current_user: models.User = Depends(get_current_active_user)
+) -> models.User:
     if current_user.role != models.RoleEnum.SUPER_ADMIN:
         raise HTTPException(status_code=403, detail="Droits super administrateur requis")
     return current_user

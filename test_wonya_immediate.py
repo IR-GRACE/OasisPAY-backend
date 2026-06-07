@@ -147,7 +147,7 @@ async def create_real_payment():
                 print("\n📱 CE QUI SE PASSE MAINTENANT :")
                 print("   1. WonyaPay a reçu la demande")
                 print("   2. Un push est envoyé au téléphone 0999999999")
-                print("   3. L'utilisateur doit confirmer le paiement")
+                print("   3. L'User doit confirmer le paiement")
                 print("   4. La transaction sera complétée en 30 secondes")
                 
                 return result.get('transaction_ref')

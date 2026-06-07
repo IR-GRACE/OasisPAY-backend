@@ -11,7 +11,7 @@ def get_frais(
     ecole_id: Optional[int] = None,
     annee_scolaire: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user: models.Utilisateur = Depends(auth.get_current_active_user)
+    current_user: models.User = Depends(auth.get_current_active_user)
 ):
     query = db.query(models.FraisScolaire)
     if ecole_id:
@@ -24,7 +24,7 @@ def get_frais(
 def create_frais(
     frais: schemas.FraisCreate,
     db: Session = Depends(get_db),
-    current_user: models.Utilisateur = Depends(auth.require_admin)
+    current_user: models.User = Depends(auth.require_admin)
 ):
     new_frais = models.FraisScolaire(**frais.dict())
     db.add(new_frais)
@@ -37,7 +37,7 @@ def update_frais(
     frais_id: int,
     frais_update: schemas.FraisCreate,
     db: Session = Depends(get_db),
-    current_user: models.Utilisateur = Depends(auth.require_admin)
+    current_user: models.User = Depends(auth.require_admin)
 ):
     frais = db.query(models.FraisScolaire).filter(models.FraisScolaire.id == frais_id).first()
     if not frais:
@@ -53,7 +53,7 @@ def update_frais(
 def delete_frais(
     frais_id: int,
     db: Session = Depends(get_db),
-    current_user: models.Utilisateur = Depends(auth.require_admin)
+    current_user: models.User = Depends(auth.require_admin)
 ):
     frais = db.query(models.FraisScolaire).filter(models.FraisScolaire.id == frais_id).first()
     if not frais:

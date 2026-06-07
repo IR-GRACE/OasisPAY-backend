@@ -14,7 +14,7 @@ def get_etudiants(
     ecole_id: Optional[int] = None,
     actif: Optional[bool] = None,
     db: Session = Depends(get_db),
-    current_user: models.Utilisateur = Depends(auth.get_current_active_user)
+    current_user: models.User = Depends(auth.get_current_active_user)
 ):
     query = db.query(models.Etudiant)
     if classe_id:
@@ -35,7 +35,7 @@ def get_etudiants(
 def create_etudiant(
     etudiant: schemas.EtudiantCreate,
     db: Session = Depends(get_db),
-    current_user: models.Utilisateur = Depends(auth.require_admin)
+    current_user: models.User = Depends(auth.require_admin)
 ):
     existing = db.query(models.Etudiant).filter(models.Etudiant.matricule == etudiant.matricule).first()
     if existing:
@@ -51,7 +51,7 @@ def create_etudiant(
 def get_etudiant(
     etudiant_id: int,
     db: Session = Depends(get_db),
-    current_user: models.Utilisateur = Depends(auth.get_current_active_user)
+    current_user: models.User = Depends(auth.get_current_active_user)
 ):
     etudiant = db.query(models.Etudiant).filter(models.Etudiant.id == etudiant_id).first()
     if not etudiant:
@@ -63,7 +63,7 @@ def update_etudiant(
     etudiant_id: int,
     etudiant_update: schemas.EtudiantCreate,
     db: Session = Depends(get_db),
-    current_user: models.Utilisateur = Depends(auth.require_admin)
+    current_user: models.User = Depends(auth.require_admin)
 ):
     etudiant = db.query(models.Etudiant).filter(models.Etudiant.id == etudiant_id).first()
     if not etudiant:
@@ -79,7 +79,7 @@ def update_etudiant(
 def delete_etudiant(
     etudiant_id: int,
     db: Session = Depends(get_db),
-    current_user: models.Utilisateur = Depends(auth.require_admin)
+    current_user: models.User = Depends(auth.require_admin)
 ):
     etudiant = db.query(models.Etudiant).filter(models.Etudiant.id == etudiant_id).first()
     if not etudiant:
@@ -93,7 +93,7 @@ def delete_etudiant(
 def search_etudiants(
     query: str,
     db: Session = Depends(get_db),
-    current_user: models.Utilisateur = Depends(auth.get_current_active_user)
+    current_user: models.User = Depends(auth.get_current_active_user)
 ):
     results = db.query(models.Etudiant).filter(
         models.Etudiant.nom.ilike(f"%{query}%") | 

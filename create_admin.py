@@ -1,5 +1,5 @@
 from app.database import SessionLocal
-from app.models import Utilisateur
+from app.models import User
 from app.auth import get_password_hash
 
 def create_user():
@@ -7,9 +7,9 @@ def create_user():
     email = "stypojulvier009@gmail.com"
     password = "2003"
     try:
-        user = db.query(Utilisateur).filter(Utilisateur.email == email).first()
+        user = db.query(User).filter(User.email == email).first()
         if not user:
-            user = Utilisateur(
+            user = User(
                 email=email,
                 nom="Admin",
                 prenom="System",
@@ -19,9 +19,9 @@ def create_user():
             )
             db.add(user)
             db.commit()
-            print(f"✅ Utilisateur {email} créé avec succès")
+            print(f"✅ User {email} créé avec succès")
         else:
-            print(f"ℹ️ L'utilisateur {email} existe déjà")
+            print(f"ℹ️ L'User {email} existe déjà")
             # Mettre à jour le mot de passe si besoin
             user.hashed_password = get_password_hash(password)
             db.commit()

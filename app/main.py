@@ -1,11 +1,11 @@
-﻿from . import models
+from . import models
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine
 from .models import Base
 from .routers import auth, etudiants, paiements, admin, classes, notifications
 
-# CrÃ©er les tables
+# Créer les tables
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="OasisPAY API", version="2.0.0")

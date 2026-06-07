@@ -28,7 +28,7 @@ def _get_current_user(authorization: str = Header(None), db: Session = Depends(g
 
     user = db.query(User).filter(User.email == claims.get("sub")).first()
     if not user or not user.is_active:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Utilisateur introuvable ou inactif")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User introuvable ou inactif")
     return user
 
 

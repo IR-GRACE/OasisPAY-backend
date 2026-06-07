@@ -1,4 +1,4 @@
-﻿from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey, JSON, UUID
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey, JSON, UUID
 from sqlalchemy.sql import func
 from sqlalchemy.dialects.postgresql import INET
 from app.database import Base

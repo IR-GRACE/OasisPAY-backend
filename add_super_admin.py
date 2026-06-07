@@ -87,7 +87,7 @@ def create_super_admin_grace():
             print(f"   • Téléphone : {new_admin.phone}")
             print(f"   • Date création : {new_admin.created_at}")
         
-        # Crée aussi un utilisateur User pour l'authentification JWT
+        # Crée aussi un User User pour l'authentification JWT
         create_user_for_admin(admin_info, db)
         
         print("\n" + "="*60)
@@ -130,16 +130,16 @@ def create_super_admin_grace():
         db.close()
 
 def create_user_for_admin(admin_info, db):
-    """Crée un utilisateur User pour l'authentification JWT"""
-    print(f"\n👤 Création utilisateur pour authentification JWT...")
+    """Crée un User User pour l'authentification JWT"""
+    print(f"\n👤 Création User pour authentification JWT...")
     
-    # Vérifie si l'utilisateur existe déjà
+    # Vérifie si l'User existe déjà
     existing_user = db.query(User).filter(
         User.email == admin_info['email']
     ).first()
     
     if existing_user:
-        print(f"   ⚠️  Utilisateur existe déjà : {existing_user.email}")
+        print(f"   ⚠️  User existe déjà : {existing_user.email}")
         # Met à jour le rôle
         existing_user.role = admin_info['role']
         existing_user.full_name = admin_info['name']
@@ -147,7 +147,7 @@ def create_user_for_admin(admin_info, db):
         db.commit()
         print(f"   ✅ Rôle mis à jour : {admin_info['role']}")
     else:
-        # Crée un nouvel utilisateur
+        # Crée un nouvel User
         new_user = User(
             email=admin_info['email'],
             full_name=admin_info['name'],
@@ -159,7 +159,7 @@ def create_user_for_admin(admin_info, db):
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
-        print(f"   ✅ Utilisateur créé : {new_user.email} ({new_user.role})")
+        print(f"   ✅ User créé : {new_user.email} ({new_user.role})")
     
     print(f"\n🔐 Authentification JWT disponible :")
     print(f"   • Email : {admin_info['email']}")

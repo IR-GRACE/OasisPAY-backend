@@ -87,18 +87,18 @@ def add_grace_to_db():
         users_table_exists = cursor.fetchone()
         
         if users_table_exists:
-            # Vérifie si l'utilisateur existe
+            # Vérifie si l'User existe
             cursor.execute("SELECT id, email FROM users WHERE email = ?", (grace_info['email'],))
             user_exists = cursor.fetchone()
             
             if not user_exists:
-                # Crée l'utilisateur pour JWT
+                # Crée l'User pour JWT
                 cursor.execute("""
                     INSERT INTO users (email, full_name, role, status, is_active, created_at, updated_at)
                     VALUES (?, ?, 'super_admin', 'approved', 1, datetime('now'), datetime('now'))
                 """, (grace_info['email'], grace_info['name']))
                 conn.commit()
-                print("UTILISATEUR GRACE CREE POUR AUTH JWT")
+                print("User GRACE CREE POUR AUTH JWT")
         
         # Liste tous les admins
         print("\n" + "="*50)

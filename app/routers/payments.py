@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from ..database import get_db
-from ..models import Paiement, Utilisateur, Etudiant
+from ..models import Paiement, User, Etudiant
 from ..schemas import PaiementCreate, PaiementResponse
 from ..services.wonya_pay import WonyaPayService
 from .auth import get_current_user
@@ -14,7 +14,7 @@ router = APIRouter(prefix="/payments", tags=["Paiements"])
 async def initier_paiement(
     paiement: PaiementCreate,
     db: Session = Depends(get_db),
-    current_user: Utilisateur = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     etudiant = db.query(Etudiant).filter(Etudiant.id == paiement.etudiant_id).first()
     if not etudiant:
@@ -82,7 +82,7 @@ async def wonya_webhook(request: Request, db: Session = Depends(get_db)):
     return {"status": "ignored", "message": "Référence non trouvée"}
 
 @router.get("/{reference}", response_model=PaiementResponse)
-def get_paiement(reference: str, db: Session = Depends(get_db), current_user: Utilisateur = Depends(get_current_user)):
+def get_paiement(reference: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     paiement = db.query(Paiement).filter(Paiement.reference == reference).first()
     if not paiement:
         raise HTTPException(status_code=404, detail="Paiement non trouvé")

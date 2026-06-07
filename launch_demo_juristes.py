@@ -191,7 +191,7 @@ def create_demo_data():
     INSERT OR IGNORE INTO etudiants (matricule, nom, prenom, classe_id) 
     VALUES ('ETU001', 'KABILA', 'Joseph', 1);
     
-    -- Crée un utilisateur parent
+    -- Crée un User parent
     INSERT OR IGNORE INTO users (email, full_name, role, student_id, status, is_active)
     VALUES ('parent@test.cd', 'Parent Test', 'parent', 'ETU001', 'approved', 1);
     

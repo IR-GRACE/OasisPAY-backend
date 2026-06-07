@@ -10,9 +10,9 @@ def init_admin():
         admin_email = os.getenv("ADMIN_EMAIL", "stypojulvier009@mail.com")
         admin_password = os.getenv("ADMIN_PASSWORD", "Mukend123")
         
-        admin = db.query(models.Utilisateur).filter(models.Utilisateur.email == admin_email).first()
+        admin = db.query(models.User).filter(models.User.email == admin_email).first()
         if not admin:
-            admin = models.Utilisateur(
+            admin = models.User(
                 nom="Administrateur",
                 prenom="Principal",
                 email=admin_email,

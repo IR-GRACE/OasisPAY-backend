@@ -10,7 +10,7 @@ router = APIRouter(prefix="/notifications", tags=["Notifications"])
 def register_fcm_token(
     token: str,
     db: Session = Depends(get_db),
-    current_user: models.Utilisateur = Depends(auth.get_current_user)
+    current_user: models.User = Depends(auth.get_current_user)
 ):
     """Enregistrer le token FCM du mobile"""
     current_user.fcm_token = token
@@ -20,7 +20,7 @@ def register_fcm_token(
 @router.post("/send-test")
 def send_test_notification(
     db: Session = Depends(get_db),
-    current_user: models.Utilisateur = Depends(auth.require_super_admin)
+    current_user: models.User = Depends(auth.require_super_admin)
 ):
     """Tester l'envoi de notification"""
     result = NotificationService.send_test_notification()
@@ -32,12 +32,12 @@ def send_notification(
     title: str,
     body: str,
     db: Session = Depends(get_db),
-    current_user: models.Utilisateur = Depends(auth.require_super_admin)
+    current_user: models.User = Depends(auth.require_super_admin)
 ):
-    """Envoyer une notification à un utilisateur"""
-    user = db.query(models.Utilisateur).filter(models.Utilisateur.id == user_id).first()
+    """Envoyer une notification à un User"""
+    user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user or not user.fcm_token:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        raise HTTPException(status_code=404, detail="User non trouvé")
     
     result = NotificationService.send_push_notification(
         token=user.fcm_token,

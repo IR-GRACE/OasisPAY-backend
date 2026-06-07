@@ -24,7 +24,7 @@ class VerifierPaiementRequest(BaseModel):
 async def initier_paiement_wonyapay(
     request: InitierPaiementRequest,
     db: Session = Depends(get_db),
-    current_user: models.Utilisateur = Depends(auth.get_current_active_user)
+    current_user: models.User = Depends(auth.get_current_active_user)
 ):
     """Initier un paiement via WonyaPay"""
     etudiant = db.query(models.Etudiant).filter(models.Etudiant.id == request.etudiant_id).first()
@@ -66,7 +66,7 @@ async def initier_paiement_wonyapay(
             "reference": reference,
             "transaction_id": result.get("transaction_id"),
             "payment_url": result.get("payment_url"),
-            "message": "Redirigez l'utilisateur vers l'URL de paiement"
+            "message": "Redirigez l'User vers l'URL de paiement"
         }
     except Exception as e:
         nouveau_paiement.statut = models.StatutPaiementEnum.ANNULE
@@ -127,7 +127,7 @@ async def webhook_wonyapay(
 def get_historique_paiements(
     etudiant_id: Optional[int] = None,
     db: Session = Depends(get_db),
-    current_user: models.Utilisateur = Depends(auth.get_current_active_user)
+    current_user: models.User = Depends(auth.get_current_active_user)
 ):
     """Récupérer l'historique des paiements"""
     query = db.query(models.Paiement)
@@ -147,7 +147,7 @@ def get_historique_paiements(
 def get_recu_paiement(
     paiement_id: int,
     db: Session = Depends(get_db),
-    current_user: models.Utilisateur = Depends(auth.get_current_active_user)
+    current_user: models.User = Depends(auth.get_current_active_user)
 ):
     """Générer et récupérer le reçu d'un paiement"""
     paiement = db.query(models.Paiement).filter(models.Paiement.id == paiement_id).first()

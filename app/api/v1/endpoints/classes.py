@@ -9,7 +9,7 @@ router = APIRouter(prefix="/classes", tags=["Classes"])
 @router.get("/", response_model=List[schemas.ClasseResponse])
 def get_classes(
     db: Session = Depends(get_db),
-    current_user: models.Utilisateur = Depends(auth.get_current_active_user)
+    current_user: models.User = Depends(auth.get_current_active_user)
 ):
     return db.query(models.Classe).all()
 
@@ -17,7 +17,7 @@ def get_classes(
 def create_classe(
     classe: schemas.ClasseCreate,
     db: Session = Depends(get_db),
-    current_user: models.Utilisateur = Depends(auth.require_admin)
+    current_user: models.User = Depends(auth.require_admin)
 ):
     new_classe = models.Classe(**classe.dict())
     db.add(new_classe)
@@ -29,7 +29,7 @@ def create_classe(
 def get_classe(
     classe_id: int,
     db: Session = Depends(get_db),
-    current_user: models.Utilisateur = Depends(auth.get_current_active_user)
+    current_user: models.User = Depends(auth.get_current_active_user)
 ):
     classe = db.query(models.Classe).filter(models.Classe.id == classe_id).first()
     if not classe:
@@ -41,7 +41,7 @@ def update_classe(
     classe_id: int,
     classe_update: schemas.ClasseCreate,
     db: Session = Depends(get_db),
-    current_user: models.Utilisateur = Depends(auth.require_admin)
+    current_user: models.User = Depends(auth.require_admin)
 ):
     classe = db.query(models.Classe).filter(models.Classe.id == classe_id).first()
     if not classe:
@@ -57,7 +57,7 @@ def update_classe(
 def delete_classe(
     classe_id: int,
     db: Session = Depends(get_db),
-    current_user: models.Utilisateur = Depends(auth.require_admin)
+    current_user: models.User = Depends(auth.require_admin)
 ):
     classe = db.query(models.Classe).filter(models.Classe.id == classe_id).first()
     if not classe:
@@ -71,7 +71,7 @@ def delete_classe(
 def get_eleves_by_classe(
     classe_id: int,
     db: Session = Depends(get_db),
-    current_user: models.Utilisateur = Depends(auth.get_current_active_user)
+    current_user: models.User = Depends(auth.get_current_active_user)
 ):
     classe = db.query(models.Classe).filter(models.Classe.id == classe_id).first()
     if not classe:

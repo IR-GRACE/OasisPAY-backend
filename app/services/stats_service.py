@@ -10,8 +10,8 @@ class StatsService:
         try:
             today = datetime.utcnow().date()
             stats = {
-                "total_users": db.query(models.Utilisateur).count(),
-                "active_users": db.query(models.Utilisateur).filter(models.Utilisateur.actif == True).count(),
+                "total_users": db.query(models.User).count(),
+                "active_users": db.query(models.User).filter(models.User.actif == True).count(),
                 "total_transactions": db.query(models.Transaction).count(),
                 "daily_volume": db.query(func.sum(models.Transaction.montant)).filter(
                     func.date(models.Transaction.date) == today
@@ -29,8 +29,8 @@ class StatsService:
         db = SessionLocal()
         try:
             last_month = datetime.utcnow() - timedelta(days=30)
-            current_month_users = db.query(models.Utilisateur).filter(
-                models.Utilisateur.created_at >= last_month
+            current_month_users = db.query(models.User).filter(
+                models.User.created_at >= last_month
             ).count()
             
             return {

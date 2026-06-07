@@ -13,24 +13,24 @@ def get_users(
     role: Optional[str] = None,
     ecole_id: Optional[int] = None,
     db: Session = Depends(get_db),
-    current_user: models.Utilisateur = Depends(auth.require_admin)
+    current_user: models.User = Depends(auth.require_admin)
 ):
-    query = db.query(models.Utilisateur)
+    query = db.query(models.User)
     if role:
-        query = query.filter(models.Utilisateur.role == role)
+        query = query.filter(models.User.role == role)
     if ecole_id:
-        query = query.filter(models.Utilisateur.ecole_id == ecole_id)
+        query = query.filter(models.User.ecole_id == ecole_id)
     return query.offset(skip).limit(limit).all()
 
 @router.get("/{user_id}", response_model=schemas.UtilisateurResponse)
 def get_user(
     user_id: int,
     db: Session = Depends(get_db),
-    current_user: models.Utilisateur = Depends(auth.require_admin)
+    current_user: models.User = Depends(auth.require_admin)
 ):
-    user = db.query(models.Utilisateur).filter(models.Utilisateur.id == user_id).first()
+    user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        raise HTTPException(status_code=404, detail="User non trouvé")
     return user
 
 @router.put("/{user_id}", response_model=schemas.UtilisateurResponse)
@@ -38,11 +38,11 @@ def update_user(
     user_id: int,
     user_update: schemas.UtilisateurUpdate,
     db: Session = Depends(get_db),
-    current_user: models.Utilisateur = Depends(auth.require_super_admin)
+    current_user: models.User = Depends(auth.require_super_admin)
 ):
-    user = db.query(models.Utilisateur).filter(models.Utilisateur.id == user_id).first()
+    user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        raise HTTPException(status_code=404, detail="User non trouvé")
     
     for key, value in user_update.dict(exclude_unset=True).items():
         setattr(user, key, value)
@@ -54,27 +54,27 @@ def update_user(
 def delete_user(
     user_id: int,
     db: Session = Depends(get_db),
-    current_user: models.Utilisateur = Depends(auth.require_super_admin)
+    current_user: models.User = Depends(auth.require_super_admin)
 ):
-    user = db.query(models.Utilisateur).filter(models.Utilisateur.id == user_id).first()
+    user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        raise HTTPException(status_code=404, detail="User non trouvé")
     if user.id == current_user.id:
         raise HTTPException(status_code=400, detail="Impossible de supprimer son propre compte")
     
     db.delete(user)
     db.commit()
-    return {"message": "Utilisateur supprimé"}
+    return {"message": "User supprimé"}
 
 @router.put("/{user_id}/status")
 def toggle_user_status(
     user_id: int,
     db: Session = Depends(get_db),
-    current_user: models.Utilisateur = Depends(auth.require_admin)
+    current_user: models.User = Depends(auth.require_admin)
 ):
-    user = db.query(models.Utilisateur).filter(models.Utilisateur.id == user_id).first()
+    user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        raise HTTPException(status_code=404, detail="User non trouvé")
     if user.id == current_user.id:
         raise HTTPException(status_code=400, detail="Impossible de modifier son propre statut")
     
@@ -88,11 +88,11 @@ def update_user_role(
     user_id: int,
     role: models.RoleEnum,
     db: Session = Depends(get_db),
-    current_user: models.Utilisateur = Depends(auth.require_super_admin)
+    current_user: models.User = Depends(auth.require_super_admin)
 ):
-    user = db.query(models.Utilisateur).filter(models.Utilisateur.id == user_id).first()
+    user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
-        raise HTTPException(status_code=404, detail="Utilisateur non trouvé")
+        raise HTTPException(status_code=404, detail="User non trouvé")
     
     user.role = role
     db.commit()
