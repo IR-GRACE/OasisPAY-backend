@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine
 from .models import Base
-from .routers import auth, etudiants, paiements, admin, classes, notifications
+from .routers import auth, etudiants, paiements, admin, classes, notifications, users
 
 # Créer les tables
 Base.metadata.create_all(bind=engine)
@@ -19,13 +19,19 @@ app.add_middleware(
 )
 
 app.include_router(auth.router, prefix="/api/v1")
-app.include_router(etudiants.router, prefix="/api/v1")
-app.include_router(paiements.router, prefix="/api/v1")
-app.include_router(admin.router, prefix="/api/v1")
-app.include_router(classes.router, prefix="/api/v1")
-app.include_router(notifications.router, prefix="/api/v1")
 
-@app.get("/")
+app.include_router(users.router, prefix="/api/v1")app.include_router(etudiants.router, prefix="/api/v1")
+
+app.include_router(users.router, prefix="/api/v1")app.include_router(paiements.router, prefix="/api/v1")
+
+app.include_router(users.router, prefix="/api/v1")app.include_router(admin.router, prefix="/api/v1")
+
+app.include_router(users.router, prefix="/api/v1")app.include_router(classes.router, prefix="/api/v1")
+
+app.include_router(users.router, prefix="/api/v1")app.include_router(notifications.router, prefix="/api/v1")
+
+
+app.include_router(users.router, prefix="/api/v1")@app.get("/")
 def root():
     return {"message": "Bienvenue sur OasisPAY API", "version": "2.0.0"}
 
